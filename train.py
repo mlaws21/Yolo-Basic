@@ -59,7 +59,10 @@ def import_data(data_path, W=128):
             img = grayscale.forward(img)
              
             xtrain.append(img)
-            ytrain.append(lab)
+            bounding_data = None
+            # convert lab to a number (tensor), then cat and the bounding data
+            y = torch.cat()
+            ytrain.append(lab, bounding_data)
 
         # lab += 1
         print(lab, end=" ", flush=True)
