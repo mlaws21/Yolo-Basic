@@ -36,11 +36,7 @@ import torch.nn
 # [   h   ]
 # [ conf? ]
 
-# take in 2 tensors and calculate IOU values
-def IOU(a, b):
-    # some code
-
-class Loss(nn.Module):
+class YoloLoss(torch.nn.Module):
     """
     Computes loss function according to YOLO v1.
 
@@ -52,6 +48,10 @@ class Loss(nn.Module):
         self.C = C
         self.l_coord = l_coord
         self.l_noobj = l_noobj
+
+    def IOU(self, box1, box2):
+        # some code
+        print("hi")
     
     def forward(self, predictions, target):
         # predictions should be of dimension (N, S, S, B*5+C)
