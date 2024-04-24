@@ -19,7 +19,7 @@ import torch.nn
 #   9  [   0   ]  one hot encoding of true value
 #  10  [   0   ]
 #  11  [   0   ]
-#  12  [   1   ]
+#  12  [   1   ]  in this example the category is c13 (12 + 1)
 #  13  [   0   ]
 #  14  [   0   ]
 #  15  [   0   ]
