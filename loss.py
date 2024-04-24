@@ -4,37 +4,67 @@ import torch
 import torch.nn
 
 # Tensor layout for each cell of 7x7:
-# [  c01  ]
-# [  c02  ]
-# [  c03  ]
-# [  c04  ]
-# [  c05  ] 
-# [  c06  ]
-# [  c07  ]
-# [  c08  ]
-# [  c09  ]
-# [  c10  ]  category probabilities
-# [  c11  ]
-# [  c12  ]
-# [  c13  ]
-# [  c14  ]
-# [  c15  ]
-# [  c16  ]
-# [  c17  ]
-# [  c18  ]
-# [  c19  ]
-# [  c20  ]
-# something here for whether there is an object?
-# [   x   ]
-# [   y   ]
-# [   w   ]
-# [   h   ]
-# [ conf? ]
-# [   x   ]
-# [   y   ]
-# [   w   ]
-# [   h   ]
-# [ conf? ]
+# 
+#
+#        TRAIN
+#   0  [   0   ]
+#   1  [   0   ]
+#   2  [   0   ]
+#   3  [   0   ]
+#   4  [   0   ] 
+#   5  [   0   ]
+#   6  [   0   ]
+#   7  [   0   ]
+#   8  [   0   ]
+#   9  [   0   ]  one hot encoding of true value
+#  10  [   0   ]
+#  11  [   0   ]
+#  12  [   1   ]
+#  13  [   0   ]
+#  14  [   0   ]
+#  15  [   0   ]
+#  16  [   0   ]
+#  17  [   0   ]
+#  18  [   0   ]
+#  19  [   0   ]
+#  20  [   1   ]  object exists here (indicator)
+#  21  [   x   ]  true x
+#  22  [   y   ]  true y
+#  23  [   w   ]  etc.
+#  24  [   h   ]
+#
+#
+#         OUT
+#   0  [  c01  ]
+#   1  [  c02  ]
+#   2  [  c03  ]
+#   3  [  c04  ]
+#   4  [  c05  ] 
+#   5  [  c06  ]
+#   6  [  c07  ]
+#   7  [  c08  ]
+#   8  [  c09  ]
+#   9  [  c10  ]  category probs p̂_i(c)
+#  10  [  c11  ]
+#  11  [  c12  ]
+#  12  [  c13  ]
+#  13  [  c14  ]
+#  14  [  c15  ]
+#  15  [  c16  ]
+#  16  [  c17  ]
+#  17  [  c18  ]
+#  18  [  c19  ]
+#  19  [  c20  ]
+#  20  [ conf. ]  Ĉ for box 1
+#  21  [   x   ]  x for box 1
+#  22  [   y   ]  etc.
+#  23  [   w   ]
+#  24  [   h   ]
+#  25  [ conf. ]  Ĉ for box 2
+#  26  [   x   ]  x for box 2
+#  27  [   y   ]  etc.
+#  28  [   w   ]
+#  29  [   h   ]
 
 class YoloLoss(torch.nn.Module):
     """
@@ -50,8 +80,8 @@ class YoloLoss(torch.nn.Module):
         self.l_noobj = l_noobj
 
     def IOU(self, box1, box2):
-        # some code
-        print("hi")
+        # take x y w h, calculate IOU
+        return -1
     
     def forward(self, predictions, target):
         # predictions should be of dimension (N, S, S, B*5+C)
@@ -64,11 +94,20 @@ class YoloLoss(torch.nn.Module):
         box2_best = max(...) # find which cell is responsible for box2
 
         # box coordinate loss (x,y)
+        coordinate_loss = 0
 
         # box dimension loss (h,w)
+        dimension_loss = 0
 
         # object loss
+        object_loss = 0
 
         # no object loss
+        no_object_loss = 0
 
         # class loss
+        class_loss = 0
+
+        # make sure to include lambdas
+        overall_loss = coordinate_loss + dimension_loss + object_loss + no_object_loss + class_loss
+        return overall_loss
