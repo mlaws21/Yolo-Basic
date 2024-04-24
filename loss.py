@@ -78,6 +78,7 @@ class YoloLoss(torch.nn.Module):
         self.C = C
         self.l_coord = l_coord
         self.l_noobj = l_noobj
+        self.mse = torch.nn.MSELoss(reduction="sum") # sum instead of averaging
 
     def IOU(self, box1, box2):
         # take x y w h, calculate IOU
@@ -105,8 +106,9 @@ class YoloLoss(torch.nn.Module):
         # no object loss
         no_object_loss = 0
 
-        # class loss
-        class_loss = 0
+        # class loss: MSE between 20 class predicted probabilities and one-hot target
+        # (this needs to incorporate the object indicator)
+        class_loss = self.mse(predictions[:,:,:,:20], target[:,:,:,:20])
 
         # make sure to include lambdas
         overall_loss = coordinate_loss + dimension_loss + object_loss + no_object_loss + class_loss
