@@ -29,7 +29,7 @@ label_to_Y = {
     "parachute": 9
 }
 
-def import_pretrain_data(data_path, W=112, batch_size=4, speed=1):
+def import_pretrain_data(data_path, W=112, batch_size=4, speed=20):
     training_data = []
     # ytrain = []
     
