@@ -36,7 +36,7 @@ model_specs = [
   
 ]
 
-def train(train_specs, training_data, n_epochs=1):
+def train(train_specs, training_data, testing_data, n_epochs=10):
 
     """
     Runs a training regime for a CNN.
@@ -50,15 +50,17 @@ def train(train_specs, training_data, n_epochs=1):
     image_width = 64
     model = yolo(train_specs)  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate) 
-    best_net, monitor = minibatch_training(model, training_data, n_epochs=n_epochs, 
+    best_net, monitor = minibatch_training(model, training_data, testing_data, n_epochs=n_epochs, 
                                            optimizer=optimizer, loss=loss)
     # classifier = Classifier(best_net, num_kernels, kernel_size, 
     #                         dense_hidden_size, manager.categories, image_width)
-    return best_net, monitor
+    return best_net
 
 def main():
     training_data = import_pretrain_data("imagenette2/train")
-    train(model_specs, training_data)
+    testing_data = import_pretrain_data("imagenette2/val")
+    
+    print(train(model_specs, training_data, testing_data))
     pass
 
 if __name__ == "__main__":

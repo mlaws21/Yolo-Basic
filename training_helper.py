@@ -2,6 +2,9 @@ import time
 import sys
 import torch
 from tqdm import tqdm
+from copy import deepcopy
+from eval import evaluate
+
 
 def nlog_softmax_loss(X, y):
     """
@@ -19,7 +22,7 @@ def nlog_softmax_loss(X, y):
     nlog_probs = -torch.log(correct_probs)
     return torch.mean(nlog_probs) 
 
-def minibatch_training(model, data_loader, 
+def minibatch_training(model, train_loader, test_loader,
                        n_epochs, optimizer, loss):
     """
     Trains a neural network using the training partition of the 
@@ -39,12 +42,12 @@ def minibatch_training(model, data_loader,
 
     best_accuracy = float('-inf')
     best_net = None
-    monitor.start(len(data_loader))
+    monitor.start(len(train_loader))
     for epoch in range(n_epochs):
         monitor.start_epoch(epoch)
         model.train() # puts the module in "training mode", e.g. ensures
                     # requires_grad is on for the parameters
-        for i, data in tqdm(enumerate(data_loader, 0)):
+        for i, data in tqdm(enumerate(train_loader, 0)):
             features, response = data
             optimizer.zero_grad()
             output = model(features)
@@ -57,13 +60,13 @@ def minibatch_training(model, data_loader,
             batch_loss.backward()
             optimizer.step()
             monitor.report_batch_loss(epoch, i, batch_loss.data.item())            
-        # model.eval() # puts the module in "evaluation mode", e.g. ensures
-        #            # requires_grad is off for the parameters
-        # dev_accuracy = manager.evaluate(net, "test")
-        # monitor.report_accuracies(epoch, None, dev_accuracy)
-        # if dev_accuracy >= best_accuracy:
-        #     best_net = deepcopy(net)     
-        #     best_accuracy = dev_accuracy
+        model.eval() # puts the module in "evaluation mode", e.g. ensures
+                   # requires_grad is off for the parameters
+        dev_accuracy = evaluate(model, test_loader)
+        monitor.report_accuracies(epoch, None, dev_accuracy)
+        if dev_accuracy >= best_accuracy:
+            best_net = deepcopy(model)     
+            best_accuracy = dev_accuracy
     monitor.stop()
     return best_net, monitor
 
