@@ -16,10 +16,13 @@ def nlog_softmax_loss(X, y):
     
     """    
     smax = torch.softmax(X, dim=1)
-    # print(y.unsqueeze(1).shape)
+    # print(smax.shape)
+    # print(smax)
     correct_probs = torch.gather(smax, 1, y)
+    # print(correct_probs)
     
-    nlog_probs = -torch.log(correct_probs)
+    
+    nlog_probs = -torch.log(correct_probs + 1/1e9) #IS THIS OK?
     return torch.mean(nlog_probs) 
 
 def minibatch_training(model, train_loader, test_loader,
@@ -63,7 +66,9 @@ def minibatch_training(model, train_loader, test_loader,
         model.eval() # puts the module in "evaluation mode", e.g. ensures
                    # requires_grad is off for the parameters
         dev_accuracy = evaluate(model, test_loader)
-        monitor.report_accuracies(epoch, None, dev_accuracy)
+        train_accuracy = evaluate(model, train_loader)
+        
+        monitor.report_accuracies(epoch, train_accuracy, dev_accuracy)
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(model)     
             best_accuracy = dev_accuracy

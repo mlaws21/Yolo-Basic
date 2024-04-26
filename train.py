@@ -27,7 +27,7 @@ model_specs = [
     ("dense", (GRID_SIZE*GRID_SIZE*LAST_NUM_K, 4096, -1)),
     ("relu", ()),
     ("dense", (4096, 10, -1)),
-    ("relu", ()),
+    # ("relu", ()),
     
     
     
@@ -46,8 +46,7 @@ def train(train_specs, training_data, testing_data, n_epochs=10):
     # test_set = DataPartition(data_config, './data', 'test')
     # manager = DataManager(train_set, test_set)
     loss = nlog_softmax_loss
-    learning_rate = .001
-    image_width = 64
+    learning_rate = .1
     model = yolo(train_specs)  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate) 
     best_net, monitor = minibatch_training(model, training_data, testing_data, n_epochs=n_epochs, 
