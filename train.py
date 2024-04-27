@@ -1,6 +1,6 @@
 import torch.optim as optim
 
-from data_reader import import_bounding_data, import_pretrain_data
+from data_reader import import_bounding_data, import_pretrain_data, import_synth_data
 from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_training
 from model import yolo
 
@@ -10,24 +10,24 @@ GRID_SIZE = 7
 model_specs = [
     ("conv", (7, 32, 2)),
     ("pool", (2, -1, 2)),
-    ("conv", (3, 64, 1)),
+    # ("conv", (3, 64, 1)),
     ("pool", (2, -1, 2)),
-    ("conv", (1, 32, 1)),
-    ("conv", (3, 32, 1)),
-    ("conv", (1, 32, 1)),
-    ("conv", (3, 32, 1)),
+    # ("conv", (1, 32, 1)),
+    # ("conv", (3, 32, 1)),
+    # ("conv", (1, 32, 1)),
+    # ("conv", (3, 32, 1)),
     ("pool", (2, -1, 2)),
-    ("conv", (1, 32, 1)),
-    ("conv", (3, 32, 1)),
-    ("conv", (1, 32, 1)),
-    ("conv", (3, 32, 1)),
-    ("conv", (3, 128, 1)),
+    # ("conv", (1, 32, 1)),
+    # ("conv", (3, 32, 1)),
+    # ("conv", (1, 32, 1)),
+    # ("conv", (3, 32, 1)),
+    # ("conv", (3, 128, 1)),
     ("conv", (3, 256, 1)),
     ("flatten", ()),
     ("dense", (GRID_SIZE*GRID_SIZE*LAST_NUM_K, 4096, -1)),
     ("relu", ()),
-    ("dense", (4096, 10, -1)),
-    # ("relu", ()),
+    ("dense", (4096, 2, -1)),
+    ("relu", ()),
     
     
     
@@ -56,8 +56,9 @@ def train(train_specs, training_data, testing_data, n_epochs=10):
     return best_net
 
 def main():
-    training_data = import_pretrain_data("imagenette2/train")
-    testing_data = import_pretrain_data("imagenette2/val")
+    # training_data = import_pretrain_data("imagenette2/train", speed=10)
+    training_data = import_synth_data("XO/train/", speed=10, batch_size=32)
+    testing_data = import_synth_data("XO/test/")
     
     print(train(model_specs, training_data, testing_data))
     pass

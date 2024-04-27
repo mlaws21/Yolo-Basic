@@ -22,7 +22,7 @@ def nlog_softmax_loss(X, y):
     # print(correct_probs)
     
     
-    nlog_probs = -torch.log(correct_probs + 1/1e9) #IS THIS OK?
+    nlog_probs = -torch.log(correct_probs + 1e-9) #IS THIS OK?
     return torch.mean(nlog_probs) 
 
 def minibatch_training(model, train_loader, test_loader,

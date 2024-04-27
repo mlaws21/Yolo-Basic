@@ -145,6 +145,9 @@ class Dense(torch.nn.Module):
         
         """        
         x2 = torch.cat([torch.ones(x.shape[0],1),x], dim=1)
+        # print(torch.matmul(self.weight,x2.t()).t())
+        # print(torch.softmax(torch.matmul(self.weight,x2.t()).t(), dim=1))
+
         return torch.matmul(self.weight,x2.t()).t() 
     
 # format of input list of (layer, (conv, kernels, stride))

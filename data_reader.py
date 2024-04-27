@@ -50,11 +50,38 @@ def import_pretrain_data(data_path, W=112, batch_size=4, speed=20):
             img = resize(img)
             grayscale = transforms.Grayscale(num_output_channels=1)
             img = grayscale.forward(img)
+            img = (img - 128) / 255
              
             training_data.append((img, torch.nn.functional.one_hot(tensor(label_to_Y[lab]), 10)))
 
         print(lab, end=" ", flush=True)
     print()
+    image_dataset = ImageDataset(training_data)
+    dl = DataLoader(image_dataset, batch_size=batch_size, shuffle=True)
+    return dl
+
+def import_synth_data(data_path, W=112, batch_size=4, speed=20):
+    training_data = []
+    
+    pre_images = sorted(os.listdir(data_path))
+    if ".DS_Store" in pre_images: pre_images.remove(".DS_Store")
+
+    for pre_image in pre_images[::speed]:
+        
+        img_path = os.path.join(data_path, pre_image)
+        try:
+            img = io.read_image(img_path, io.ImageReadMode.RGB)
+        except:
+            raise Exception(f"The following image is missing or corrupted: {img_path}")
+        resize = transforms.Resize((W, W))
+        img = resize(img)
+        grayscale = transforms.Grayscale(num_output_channels=1)
+        img = grayscale.forward(img)
+        img = (img - 128) / 255
+        lab = 1 if "X" in pre_image else 0
+        training_data.append((img, torch.nn.functional.one_hot(tensor(lab), 2)))
+
+    # print()
     image_dataset = ImageDataset(training_data)
     dl = DataLoader(image_dataset, batch_size=batch_size, shuffle=True)
     return dl
@@ -81,6 +108,7 @@ def import_bounding_data(data_path, routine="train", W=128, batch_size=4):
         
         img = resize(img)
         img = grayscale.forward(img)
+        img = (img - 128) / 255
         
         
         ### BOUDING DATA  (Y) ###
