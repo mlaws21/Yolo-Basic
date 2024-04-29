@@ -2,3 +2,4 @@ imagenette*/*
 *env/*
 *voc*/*
 *XO*/*
+*.DS_Store*

@@ -15,9 +15,10 @@ def nlog_softmax_loss(X, y):
     See the unit tests in test.py for expected functionality.
     
     """    
+    # print("X", X)
     smax = torch.softmax(X, dim=1)
     # print(smax.shape)
-    # print(smax)
+    # print(smax)/
     correct_probs = torch.gather(smax, 1, y)
     # print(correct_probs)
     
@@ -53,8 +54,9 @@ def minibatch_training(model, train_loader, test_loader,
         for i, data in tqdm(enumerate(train_loader, 0)):
             features, response = data
             optimizer.zero_grad()
-            output = model(features)
             
+            output = model(features)
+            output.requires_grad_()
             # print(output.shape, response.shape)
             # print(output)
             # print(response)

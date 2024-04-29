@@ -77,7 +77,7 @@ def import_synth_data(data_path, W=112, batch_size=4, speed=20):
         img = resize(img)
         grayscale = transforms.Grayscale(num_output_channels=1)
         img = grayscale.forward(img)
-        img = (img - 128) / 255
+        # print(torch.max(img, dim=1))
         lab = 1 if "X" in pre_image else 0
         training_data.append((img, torch.nn.functional.one_hot(tensor(lab), 2)))
 

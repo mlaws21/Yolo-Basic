@@ -1,5 +1,5 @@
 import torch
-from torch.nn import Unfold, Parameter, Module, init, Sequential
+from torch.nn import Unfold, Parameter, Module, init, Sequential, LayerNorm
 from cnn_helper import convolve
 
 class ConvLayer(Module):
@@ -25,7 +25,7 @@ class ConvLayer(Module):
         out = self.offset + convolve(self.kappa, x, 
                                       self.stride, self.padding)
         
-        return torch.nn.functional.relu(out)
+        return out
         
         
 class MaxPool(Module):
@@ -202,6 +202,9 @@ def yolo(specs):
             
         elif layer_type == "relu":
             model.add_module(layer_name, ReLU())
+            
+        elif layer_type == "norm":
+            model.add_module(layer_name, LayerNorm(layer_spec))
         else:
             pass
             
@@ -222,4 +225,45 @@ def yolo(specs):
     #                                  dense_hidden_size))
     # model.add_module("relu3", ReLU())
     # model.add_module("dense2", Dense(dense_hidden_size, output_classes))
+    return model
+
+
+def create_cnn(num_kernels, kernel_size, 
+               output_classes, dense_hidden_size,
+               image_width, is_grayscale=False,
+               use_maxpool=True):
+    """
+    Builds a CNN with two convolutional layers and two feedforward layers.
+    
+    Maxpool is added by default, but can be disabled.
+
+    This function is already completed.
+    
+    """  
+    padding = kernel_size//2
+    output_width = image_width
+    if use_maxpool:
+        output_width = output_width // 16
+    model = Sequential()
+    if is_grayscale:
+        num_input_channels = 1
+    else:
+        num_input_channels = 3
+    model.add_module("conv1", ConvLayer(num_input_channels, num_kernels,
+                                   kernel_size=kernel_size, 
+                                   stride=1, padding=padding))
+    model.add_module("relu1", ReLU())
+    if use_maxpool:
+        model.add_module("pool1", MaxPool(kernel_size=4, stride=4, padding=0))
+    model.add_module("conv2", ConvLayer(num_kernels, num_kernels,
+                                              kernel_size=kernel_size, 
+                                              stride=1, padding=padding))
+    model.add_module("relu2", ReLU())
+    if use_maxpool:
+        model.add_module("pool2", MaxPool(kernel_size=4, stride=4, padding=0))
+    model.add_module("flatten", Flatten())
+    model.add_module("dense1", Dense(num_kernels * output_width**2, 
+                                     dense_hidden_size))
+    model.add_module("relu3", ReLU())
+    model.add_module("dense2", Dense(dense_hidden_size, output_classes))
     return model
