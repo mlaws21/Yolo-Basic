@@ -119,7 +119,7 @@ class YoloLoss(torch.nn.Module):
     Computes loss function according to YOLO v1.
 
     """
-    def __init__(self, S = 7, B = 2, C = 20):
+    def __init__(self, S = 7, B = 1, C = 5):
         super().__init__()
         self.S = S
         self.B = B
@@ -133,18 +133,18 @@ class YoloLoss(torch.nn.Module):
         predictions.reshape_(-1, self.S, self.S, self.B * 5 + self.C)
 
         # get best IOU for box1 and box2
-        box1_IOU = intersection_over_union(predictions[..., 21:25], target[..., 21:25])
-        box2_IOU = intersection_over_union(predictions[..., 26:30], target[..., 21:25])
-        IOUs = torch.cat(box1_IOU.unsqueeze(0), box2_IOU.unsqueeze(0), dim=0)
-        resp_box = torch.max(IOUs, dim=0)[1]
+        IOU = intersection_over_union(predictions[..., self.C + 1:], target[..., self.C + 1:])
+        # box2_IOU = intersection_over_union(predictions[..., 26:30], target[..., 21:25])
+        # IOUs = torch.cat(box1_IOU.unsqueeze(0), box2_IOU.unsqueeze(0), dim=0)
+        resp_box = torch.max(IOUs, dim=0)[1] # Is this the max between IOUs or somehting else
 
         # get indicator 𝟙obj_i
-        indicator = target[..., 20].unsqueeze(3)
+        indicator = target[..., self.C].unsqueeze(3)
 
         ## box coordinate + dimension loss ##
-        box_targets = indicator * target[..., 21:25]
+        box_targets = indicator * target[..., self.C + 1:]
         # select predicted coordinates
-        box_preds = indicator * (resp_box * predictions[..., 21:25] + (1 - resp_box) * predictions[..., 21:25])
+        box_preds = indicator * (resp_box * predictions[..., self.C + 1:] + (1 - resp_box) * predictions[..., self.C + 1:])
         # select predicted dimensions and take sqrt
         box_preds[..., 2:4] = torch.sign(box_preds[..., 2:4]) * torch.sqrt(torch.abs(box_preds[..., 2:4] + 1e-6))
         # take sqrt of target dimensions as well
@@ -154,18 +154,18 @@ class YoloLoss(torch.nn.Module):
 
         ## object loss ##
         # confidence score for responsible box (highest IOU)
-        resp_confidence = resp_box * predictions[..., 25:26] + (1 - resp_box) * predictions[..., 20:21]
-        object_loss = self.sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., 20:21]))
+        resp_confidence = resp_box * predictions[..., self.C]
+        object_loss = self.sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., self.C]))
 
         # no object loss
-        noobj_loss_b1 = self.sse(torch.flatten((1 - indicator) * predictions[..., 20:21], start_dim=1),
-                              torch.flatten((1 - indicator) * target[..., 20:21], start_dim=1))
-        noobj_loss_b2 = self.sse(torch.flatten((1 - indicator) * predictions[..., 25:26], start_dim=1),
-                              torch.flatten((1 - indicator) * target[..., 20:21], start_dim=1))
-        noobj_loss = noobj_loss_b1 + noobj_loss_b2
+        noobj_loss_b1 = self.sse(torch.flatten((1 - indicator) * predictions[..., self.C], start_dim=1),
+                              torch.flatten((1 - indicator) * target[..., self.C], start_dim=1))
+        # noobj_loss_b2 = self.sse(torch.flatten((1 - indicator) * predictions[..., 25:26], start_dim=1),
+        #                       torch.flatten((1 - indicator) * target[..., 20:21], start_dim=1))
+        noobj_loss = noobj_loss_b1 # + noobj_loss_b2
 
         # class loss: MSE between 20 class predicted probabilities and one-hot target
-        class_loss = self.sse(torch.flatten(indicator * predictions[..., :20], end_dim=-2), torch.flatten(indicator * target[..., :20], end_dim=-2))
+        class_loss = self.sse(torch.flatten(indicator * predictions[..., :self.C], end_dim=-2), torch.flatten(indicator * target[..., :self.C], end_dim=-2))
 
         # make sure to include lambdas
         overall_loss = self.l_coord * box_loss + object_loss + self.l_noobj * noobj_loss + class_loss

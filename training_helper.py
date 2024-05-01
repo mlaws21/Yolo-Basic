@@ -28,6 +28,7 @@ from datamanager import TrainingMonitor
 #     return torch.mean(nlog_probs) 
 
 
+
 def nlog_softmax_loss(X, y):
     """
     A loss function based on softmax, described in colonels2.ipynb. 

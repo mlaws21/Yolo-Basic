@@ -164,7 +164,7 @@ class Dense(torch.nn.Module):
   
 # ]
 
-def yolo(specs):
+def yolo(specs, is_greyscale=True):
     """
     Builds a CNN with two convolutional layers and two feedforward layers.
     
@@ -177,7 +177,7 @@ def yolo(specs):
     model = Sequential()
     # input_channels = 1 # bc greyscale
     layer_num = 0
-    previous_num_k = 1
+    previous_num_k = 1 if is_greyscale else 3
     for layer_type, layer_spec in specs:
         layer_name = layer_type + str(layer_num)
         if layer_type == "conv":
@@ -197,7 +197,7 @@ def yolo(specs):
             model.add_module(layer_name, Flatten())
         
         elif layer_type == "dense":
-            input_size, output_size, _ = layer_spec
+            input_size, output_size = layer_spec
             
             model.add_module(layer_name, Dense(input_size, output_size))
             

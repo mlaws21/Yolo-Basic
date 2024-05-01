@@ -1,7 +1,7 @@
 import torch.optim as optim
 
 from data_reader import import_synth_data
-from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_training
+from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_training, yolo_training
 from model import yolo
 from datamanager import DataPartition, DataManager
 
@@ -50,19 +50,7 @@ GRID_SIZE = 7
 
 # ]
 
-model_specs = [
-    ("flatten", ()),
-    ("dense", (112*112, 2048, -1)),
-    ("relu", ()),
-    ("dense", (2048, 1024, -1)),
-    ("relu", ()),
-    ("dense", (1024, 2, -1)),
-    ("relu", ()),
 
-    
-    
-    
-]
 # 
     # model = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
     #                         output_classes=2, image_width=112,
@@ -112,6 +100,36 @@ def create_cnn(num_kernels, kernel_size,
     model.add_module("dense2", Dense(dense_hidden_size, output_classes))
     return model
 
+
+#   net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+#                                  output_classes=5, image_width=image_width,
+#                                  dense_hidden_size=dense_hidden_size,
+#                                  use_maxpool = use_maxpool, is_grayscale=True)
+  
+    #   n_epochs = 10,
+    # num_kernels = 20, 
+    # kernel_size = 3, 
+    # dense_hidden_size = 64)
+    
+model_specs = [
+    ("conv", (3, 20, 1)),
+    ("relu", ()),
+    ("conv", (3, 20, 1)),
+    ("relu", ()),
+    ("pool", (4, -1, 4)),
+    ("conv", (3, 20, 1)),
+    ("relu", ()),
+    ("pool", (4, -1, 4)),
+    ("flatten", ()),
+    ("dense", (20 * (112 // 16)**2, 64)),
+    ("relu", ()),
+    ("dense", (64, 5)),
+
+
+    
+    
+    
+]
 # def train(train_specs, training_data, testing_data, n_epochs=10):
 
 #     """
@@ -151,11 +169,11 @@ def pre_train(data_config, n_epochs, num_kernels,
     loss = nlog_softmax_loss
     learning_rate = .001
     image_width = 112
-    net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
-                                 output_classes=5, image_width=image_width,
-                                 dense_hidden_size=dense_hidden_size,
-                                 use_maxpool = use_maxpool, is_grayscale=True)
-    # net = yolo(model_specs)
+    # net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+    #                              output_classes=5, image_width=image_width,
+    #                              dense_hidden_size=dense_hidden_size,
+    #                              use_maxpool = use_maxpool, is_grayscale=True)
+    net = yolo(model_specs)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, monitor = minibatch_training(net, manager, 
                                            batch_size=32, n_epochs=n_epochs, 
@@ -177,7 +195,7 @@ def run_yolo(data_config, n_epochs, num_kernels,
     train_set = DataPartition(data_config, './', 'train', image_width=image_width)
     test_set = DataPartition(data_config, './', 'test', image_width=image_width)
     manager = DataManager(train_set, test_set)
-    loss = nlog_softmax_loss
+    loss = yolo_loss
     learning_rate = .001
     net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
                                  output_classes=5, image_width=image_width,
@@ -185,7 +203,7 @@ def run_yolo(data_config, n_epochs, num_kernels,
                                  use_maxpool = use_maxpool, is_grayscale=True)
     # net = yolo(model_specs)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
-    best_net, monitor = minibatch_training(net, manager, 
+    best_net, monitor = yolo_training(net, manager, 
                                            batch_size=32, n_epochs=n_epochs, 
                                            optimizer=optimizer, loss=loss)
     # classifier = Classifier(best_net, num_kernels, kernel_size, 
