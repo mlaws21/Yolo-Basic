@@ -76,6 +76,7 @@ class Flatten(Module):
         super().__init__()
     
     def forward(self, x):
+        # print(torch.flatten(x, start_dim=1))
         return torch.flatten(x, start_dim=1)
     
     

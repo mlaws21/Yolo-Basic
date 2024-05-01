@@ -1,94 +1,210 @@
 import torch.optim as optim
 
-from data_reader import import_bounding_data, import_pretrain_data, import_synth_data
+from data_reader import import_synth_data
 from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_training
 from model import yolo
+from datamanager import DataPartition, DataManager
+
 
 LAST_NUM_K = 256
 GRID_SIZE = 7
 
+# model_specs = [
+#     ("conv", (7, 32, 2)),
+#     ("relu", ()),
+#     ("pool", (2, -1, 2)),
+#     ("conv", (3, 64, 1)),
+#     ("relu", ()),
+#     ("pool", (2, -1, 2)),
+#     ("conv", (1, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (1, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 32, 1)),
+#     ("relu", ()),
+#     ("pool", (2, -1, 2)),
+#     ("conv", (1, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (1, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 32, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 128, 1)),
+#     ("relu", ()),
+#     ("conv", (3, 256, 1)),
+#     ("relu", ()),
+#     ("flatten", ()),
+#     ("dense", (GRID_SIZE*GRID_SIZE*LAST_NUM_K, 4096, -1)),
+#     ("relu", ()),
+#     ("norm", (4096)),
+#     ("dense", (4096, 2048, -1)),
+#     ("relu", ()),
+#     ("norm", (2048)),
+#     ("dense", (2048, 2, -1)),
+    
+#     ("relu", ()),
+
+# ]
+
 model_specs = [
-    ("conv", (7, 32, 2)),
-    ("relu", ()),
-    ("pool", (2, -1, 2)),
-    ("conv", (3, 64, 1)),
-    ("relu", ()),
-    ("pool", (2, -1, 2)),
-    ("conv", (1, 32, 1)),
-    ("relu", ()),
-    ("conv", (3, 32, 1)),
-    ("relu", ()),
-    ("conv", (1, 32, 1)),
-    ("relu", ()),
-    ("conv", (3, 32, 1)),
-    ("relu", ()),
-    ("pool", (2, -1, 2)),
-    ("conv", (1, 32, 1)),
-    ("relu", ()),
-    ("conv", (3, 32, 1)),
-    ("relu", ()),
-    ("conv", (1, 32, 1)),
-    ("relu", ()),
-    ("conv", (3, 32, 1)),
-    ("relu", ()),
-    ("conv", (3, 128, 1)),
-    ("relu", ()),
-    ("conv", (3, 256, 1)),
-    ("relu", ()),
     ("flatten", ()),
-    ("dense", (GRID_SIZE*GRID_SIZE*LAST_NUM_K, 4096, -1)),
+    ("dense", (112*112, 2048, -1)),
     ("relu", ()),
-    ("norm", (4096)),
-    ("dense", (4096, 2048, -1)),
+    ("dense", (2048, 1024, -1)),
     ("relu", ()),
-    ("norm", (2048)),
-    ("dense", (2048, 2, -1)),
-    
+    ("dense", (1024, 2, -1)),
     ("relu", ()),
+
     
     
     
-    
-    
-  
 ]
+# 
+    # model = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+    #                         output_classes=2, image_width=112,
+    #                         dense_hidden_size=dense_hidden_size,
+    #                         use_maxpool = False, is_grayscale=True)
+    
+from model import ConvLayer, ReLU, Flatten, MaxPool, Dense
+from torch.nn import Sequential
 
-from model import create_cnn 
+def create_cnn(num_kernels, kernel_size, 
+               output_classes, dense_hidden_size,
+               image_width, is_grayscale=False,
+               use_maxpool=True):
+    """
+    Builds a CNN with two convolutional layers and two feedforward layers.
+    
+    Maxpool is added by default, but can be disabled.
 
-def train(train_specs, training_data, testing_data, n_epochs=10):
+    This function is already completed.
+    
+    """  
+    padding = kernel_size//2
+    output_width = image_width
+    if use_maxpool:
+        output_width = output_width // 16
+    model = Sequential()
+    if is_grayscale:
+        num_input_channels = 1
+    else:
+        num_input_channels = 3
+    model.add_module("conv1", ConvLayer(num_input_channels, num_kernels,
+                                   kernel_size=kernel_size, 
+                                   stride=1, padding=padding))
+    model.add_module("relu1", ReLU())
+    if use_maxpool:
+        model.add_module("pool1", MaxPool(kernel_size=4, stride=4, padding=0))
+    model.add_module("conv2", ConvLayer(num_kernels, num_kernels,
+                                              kernel_size=kernel_size, 
+                                              stride=1, padding=padding))
+    model.add_module("relu2", ReLU())
+    if use_maxpool:
+        model.add_module("pool2", MaxPool(kernel_size=4, stride=4, padding=0))
+    model.add_module("flatten", Flatten())
+    model.add_module("dense1", Dense(num_kernels * output_width**2, 
+                                     dense_hidden_size))
+    model.add_module("relu3", ReLU())
+    model.add_module("dense2", Dense(dense_hidden_size, output_classes))
+    return model
 
+# def train(train_specs, training_data, testing_data, n_epochs=10):
+
+#     """
+#     Runs a training regime for a CNN.
+    
+#     """
+#     n_epochs = 10
+#     loss = nlog_softmax_loss
+#     learning_rate = .001
+#     # model = yolo(train_specs)
+#     n_epochs = 8
+#     num_kernels = 20
+#     kernel_size = 7
+#     dense_hidden_size = 64
+#     model = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+#                             output_classes=5, image_width=112,
+#                             dense_hidden_size=dense_hidden_size,
+#                             use_maxpool = False, is_grayscale=True)
+
+#     print(model)
+#     optimizer = optim.Adam(model.parameters(), lr=learning_rate) 
+#     best_net, monitor = minibatch_training(model, training_data, testing_data, n_epochs=n_epochs, 
+#                                            optimizer=optimizer, loss=loss)
+#     return best_net
+
+
+def pre_train(data_config, n_epochs, num_kernels, 
+        kernel_size, dense_hidden_size, 
+        use_maxpool=True):    
     """
     Runs a training regime for a CNN.
     
     """
-    n_epochs = 10
-    num_kernels = 20
-    kernel_size = 3 
-    dense_hidden_size = 64
-    # train_set = DataPartition(data_config, './data', 'train')
-    # test_set = DataPartition(data_config, './data', 'test')
-    # manager = DataManager(train_set, test_set)
+    train_set = DataPartition(data_config, './', 'train')
+    test_set = DataPartition(data_config, './', 'test')
+    manager = DataManager(train_set, test_set)
     loss = nlog_softmax_loss
     learning_rate = .001
-    # model = yolo(train_specs)  
-    model = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
-                            output_classes=2, image_width=112,
-                            dense_hidden_size=dense_hidden_size,
-                            use_maxpool = False, is_grayscale=True)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate) 
-    best_net, monitor = minibatch_training(model, training_data, testing_data, n_epochs=n_epochs, 
+    image_width = 112
+    net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+                                 output_classes=5, image_width=image_width,
+                                 dense_hidden_size=dense_hidden_size,
+                                 use_maxpool = use_maxpool, is_grayscale=True)
+    # net = yolo(model_specs)
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
+    best_net, monitor = minibatch_training(net, manager, 
+                                           batch_size=32, n_epochs=n_epochs, 
                                            optimizer=optimizer, loss=loss)
     # classifier = Classifier(best_net, num_kernels, kernel_size, 
     #                         dense_hidden_size, manager.categories, image_width)
-    return best_net
+    return monitor
+ 
+ 
+def run_yolo(data_config, n_epochs, num_kernels, 
+        kernel_size, dense_hidden_size, 
+        use_maxpool=True):    
+    """
+    Runs a training regime for a CNN.
+    
+    """
+    image_width = 224
+    
+    train_set = DataPartition(data_config, './', 'train', image_width=image_width)
+    test_set = DataPartition(data_config, './', 'test', image_width=image_width)
+    manager = DataManager(train_set, test_set)
+    loss = nlog_softmax_loss
+    learning_rate = .001
+    net = create_cnn(num_kernels = num_kernels, kernel_size= kernel_size, 
+                                 output_classes=5, image_width=image_width,
+                                 dense_hidden_size=dense_hidden_size,
+                                 use_maxpool = use_maxpool, is_grayscale=True)
+    # net = yolo(model_specs)
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
+    best_net, monitor = minibatch_training(net, manager, 
+                                           batch_size=32, n_epochs=n_epochs, 
+                                           optimizer=optimizer, loss=loss)
+    # classifier = Classifier(best_net, num_kernels, kernel_size, 
+    #                         dense_hidden_size, manager.categories, image_width)
+    return monitor
 
 def main():
-    # training_data = import_pretrain_data("imagenette2/train", speed=10)
-    training_data = import_synth_data("XO/train/", speed=1, batch_size=32)
-    testing_data = import_synth_data("XO/test/")
+
+    # training_data = import_synth_data("shapes/train/", speed=1, batch_size=32)
+    # testing_data = import_synth_data("shapes/test/")
     
-    print(train(model_specs, training_data, testing_data))
-    pass
+    # print(train(model_specs, training_data, testing_data))
+    
+    classifier = pre_train('one_shape_bb/data.json',
+    n_epochs = 10,
+    num_kernels = 20, 
+    kernel_size = 3, 
+    dense_hidden_size = 64)
+
 
 if __name__ == "__main__":
     main()
