@@ -164,7 +164,7 @@ class Dense(torch.nn.Module):
   
 # ]
 
-def yolo(specs, is_greyscale=True):
+def build_net(specs, is_greyscale=True):
     """
     Builds a CNN with two convolutional layers and two feedforward layers.
     
