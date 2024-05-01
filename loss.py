@@ -178,7 +178,9 @@ def yolo_loss_func(predictions, target, S=7, B=1, C=5):
         sse = torch.nn.MSELoss(reduction="sum") # sum instead of averaging
         
         # predictions should be of dimension (N, S, S, B*5+C)
-        predictions.reshape_(-1, S, S, B * 5 + C)
+        # predictions.reshape_(-1, S, S, B * 5 + C)
+        predictions = predictions.reshape((-1, S, S, B * 5 + C))
+        print(predictions.shape, target.shape)
 
         # get best IOU for box1 and box2
         IOU = intersection_over_union(predictions[..., C + 1:], target[..., C + 1:])

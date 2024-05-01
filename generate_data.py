@@ -2,10 +2,11 @@ from PIL import Image, ImageDraw
 from random import randint
 import os
 from math import sin, cos
-ratio_size = 244/400
+# ratio_size = 244/400
 
-size = 224
+size = 400
 
+# TODO return relative size (0, 1)
 box_adjust = 6
 
 def drawX(name):
@@ -19,7 +20,7 @@ def drawX(name):
 
     
     # Set the length of the lines
-    line_length = randint(50, 200) * ratio_size
+    line_length = randint(50, 200)
     
     ele_size = int(line_length / (2**0.5))
     # center_x, center_y = 200 + randint(-max_pos , max_pos), 200 + randint(-max_pos , max_pos)
@@ -46,7 +47,7 @@ def drawO(name):
     image = Image.new("RGB", (size, size), "white")
     draw = ImageDraw.Draw(image)
 
-    line_length = randint(50, 200) * ratio_size
+    line_length = randint(50, 200)
     
     ele_size = int(line_length / (2**0.5))
     top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
@@ -66,7 +67,7 @@ def drawSquare(name):
     image = Image.new("RGB", (size, size), "white")
     draw = ImageDraw.Draw(image)
 
-    line_length = randint(50, 200) * ratio_size
+    line_length = randint(50, 200)
     
     ele_size = int(line_length / (2**0.5))
     top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
@@ -91,7 +92,7 @@ def drawStar(name):
     image = Image.new("RGB", (size, size), "white")
     draw = ImageDraw.Draw(image)
 
-    line_length = randint(50, 200) * ratio_size
+    line_length = randint(50, 200)
     ele_size = int(line_length / (2**0.5))
     top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
 
@@ -124,7 +125,7 @@ def drawPent(name):
     image = Image.new("RGB", (size, size), "white")
     draw = ImageDraw.Draw(image)
 
-    line_length = randint(50, 200) * ratio_size
+    line_length = randint(50, 200)
     ele_size = int(line_length / (2**0.5))
     top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
     cx, cy = top_left_x + ele_size /2 , top_left_y+ ele_size //2
@@ -189,7 +190,7 @@ def make_synth_data(folder, numX):
             if bounding_box is not None:
                 hw, cx, cy = bounding_box
                 height, width = hw, hw
-                bb_data = f"{1},{height},{width},{cx},{cy}"
+                bb_data = f"{1},{cx / size},{cy / size},{cx / width},{height / size}"
             else:
                 bb_data = f"{0},{0},{0},{0},{0}"
                 
@@ -214,9 +215,9 @@ def make_synth_data(folder, numX):
     
         
 def main():
-    make_synth_data("one_shape_bb/train/", 1000)
+    make_synth_data("one_shape/train/", 1000)
     
-    make_synth_data("one_shape_bb/test/", 100)
+    make_synth_data("one_shape/test/", 100)
         
     # drawPent("pent")
     # drawO("o")

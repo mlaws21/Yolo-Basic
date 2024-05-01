@@ -112,10 +112,16 @@ def yolo_training(net, manager, batch_size,
         net.train() # puts the module in "training mode", e.g. ensures
                     # requires_grad is on for the parameters
         for i, data in tqdm(enumerate(train_loader, 0)):
-            features, response, boxes = manager.features_boxes_and_response(data)
+            features, response = manager.features_boxes_and_response(data)
             optimizer.zero_grad()
             output = net(features)
-            batch_loss = loss(output, response, boxes)
+            # print(response)
+            # oh_response = one_hot(response)
+            # ground = torch.cat((oh_response, boxes), dim=1)
+            
+            # print(ground )
+            print(output.shape, response.shape)
+            batch_loss = loss(output, response)
             batch_loss.backward()
             optimizer.step()
             monitor.report_batch_loss(epoch, i, batch_loss.data.item())            

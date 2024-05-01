@@ -138,10 +138,10 @@ yolo_specs = [
     ("relu", ()),
     ("pool", (4, -1, 4)),
     ("flatten", ()),
-    ("dense", (20 * (112 // 16)**2, 2048)),
+    ("dense", (20 * (224 // 16)**2, 2048)),
     
     ("relu", ()),
-    ("dense", (2048, 20 * (112 // 16)**2)),
+    ("dense", (2048, 7 * 7 * 10)),
     ("relu", ()),
     
     # ("dense", (64, 5)),
@@ -208,8 +208,8 @@ def run_yolo(data_config, n_epochs, num_kernels,
     """
     image_width = 224
     
-    train_set = DataPartition(data_config, './', 'train', image_width=image_width)
-    test_set = DataPartition(data_config, './', 'test', image_width=image_width)
+    train_set = DataPartition(data_config, './', 'train', resize_width=image_width)
+    test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
     loss = yolo_loss_func
     learning_rate = .001
@@ -230,7 +230,7 @@ def main():
     
     # print(train(model_specs, training_data, testing_data))
     
-    classifier = run_yolo('one_shape_bb/data.json',
+    classifier = run_yolo('one_shape/data.json',
     n_epochs = 10,
     num_kernels = 20, 
     kernel_size = 3, 

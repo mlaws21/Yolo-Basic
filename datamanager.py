@@ -8,6 +8,8 @@ import json
 import os
 import time
 import sys
+from torch.nn.functional import one_hot
+
 
 def retrieve_image(filename, W=112):
     """
@@ -87,6 +89,38 @@ class DataPartition(Dataset):
         """
         return self._categories
 
+
+# TODO this only works for 1 shape per image
+# C is catagories, S is grid size
+# assume batched input
+def convert_to_output(labs_list, boxes_list, S=7, C=5):
+    assert len(labs_list) == len(boxes_list)
+    batch_out = []
+    for i in range(len(labs_list)):
+        box_string = boxes_list[i]
+        label = labs_list[i]
+        box_list = (box_string.split(","))
+        conf, cx, cy, width, height = [float(x) for x in box_list]
+        out_labs = torch.zeros(S, S, C + 5)
+        row, col = int(S * cy), int(S * cx)
+        x_cell, y_cell = S * cx - col, S * cy - row
+        width_cell, height_cell = width * S, height * S
+        out_labs[row, col, label] = 1
+        out_labs[row, col, C:] = torch.tensor([conf, x_cell, y_cell, width_cell, height_cell])
+        batch_out.append(out_labs)
+    
+    return torch.stack(batch_out)
+    # labs = 
+    # ground = torch.cat((oh_response, boxes), dim=1)
+    
+    # return torch.Tensor(f_box_list)
+
+# def combine_box_and_labs(labs, boxes):
+
+    
+
+# boxes = torch.stack([convert_box(box) for box in batch[self.box_key]], dim=0)
+
 class DataManager:
     
     def __init__(self, train_partition, test_partition, 
@@ -144,7 +178,7 @@ class DataManager:
         return DataLoader(self.test_set, batch_size=4, 
                           sampler=SequentialSampler(self.test_set))
 
-    def features_labels_and_boxes(self, batch):
+    def features_boxes_and_response(self, batch):
         """
         Converts a batch obtained from either the train or test DataLoader
         into an feature tensor and a response tensor.
@@ -166,16 +200,14 @@ class DataManager:
         def category_index(category):
             return self.categories.index(category)
         inputs = batch[self.feature_key].float()
-        labels = torch.Tensor([category_index(c) for c 
-                               in batch[self.response_key]]).long()
+        labels = [category_index(c) for c 
+                               in batch[self.response_key]]
         
-        def convert_box(box_string):
-            box_list = (box_string.split(","))
-            f_box_list = [float(x) for x in box_list]
-            return torch.Tensor(f_box_list)
-        boxes = torch.stack([convert_box(box) for box in batch[self.box_key]], dim=0)
-        # print(boxes)
-        return inputs, labels, boxes
+        
+        resp = convert_to_output(labels, batch[self.box_key])
+
+        # print(resp)
+        return inputs, resp
     
     def features_and_response(self, batch):
         """
@@ -201,13 +233,7 @@ class DataManager:
         inputs = batch[self.feature_key].float()
         labels = torch.Tensor([category_index(c) for c 
                                in batch[self.response_key]]).long()
-        # def convert_box(box_string):
-        #     box_list = (box_string.split(","))
-        #     f_box_list = [float(x) for x in box_list]
-        #     return torch.Tensor(f_box_list)
-        # boxes = torch.stack([convert_box(box) for box in batch[self.box_key]], dim=0)
-        # print(boxes)
-        
+     
         return inputs, labels
 
     def evaluate(self, classifier, partition):
