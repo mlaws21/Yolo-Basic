@@ -190,7 +190,7 @@ def make_synth_data(folder, numX):
             if bounding_box is not None:
                 hw, cx, cy = bounding_box
                 height, width = hw, hw
-                bb_data = f"{1},{cx / size},{cy / size},{cx / width},{height / size}"
+                bb_data = f"{1},{cx / size},{cy / size},{width / size},{height / size}"
             else:
                 bb_data = f"{0},{0},{0},{0},{0}"
                 
