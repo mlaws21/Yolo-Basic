@@ -41,7 +41,7 @@ def main():
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
     model = build_net(pretrain_specs)
-    model.load_state_dict(torch.load("pretrain_intermediate.pt"))
+    model.load_state_dict(torch.load("pretrain.pt"))
     model.eval()
     model.requires_grad_(False)
 

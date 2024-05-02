@@ -27,6 +27,9 @@ def id(basepath, img_path, model, catagories):
     for i in range(7):
         for j in range(7):
             print(out[i,j,:5].argmax())
+            print(out[i,j,5].argmax())
+            print()
+            
     
     return out
     # return out

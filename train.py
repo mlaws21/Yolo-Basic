@@ -86,7 +86,7 @@ def run_yolo(data_config, n_epochs=10):
 
 def pretrain():
     best_net = pre_train('one_shape/data.json', n_epochs=20)
-    torch.save(best_net.state_dict(), "pretrain_gpu.pt")
+    torch.save(best_net.state_dict(), "pretrain.pt")
     
 def train():
     best_net = run_yolo('large/data.json', n_epochs=100)
