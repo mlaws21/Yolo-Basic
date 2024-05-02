@@ -91,16 +91,6 @@ def intersection_over_union(predictions, targets, box_format="midpoint"):
         box2_x2 = targets[..., 0:1] + targets[..., 2:3] / 2
         box2_y2 = targets[..., 1:2] + targets[..., 3:4] / 2
 
-    if box_format == "corners":
-        box1_x1 = predictions[..., 0:1]
-        box1_y1 = predictions[..., 1:2]
-        box1_x2 = predictions[..., 2:3]
-        box1_y2 = predictions[..., 3:4]  # (N, 1)
-        box2_x1 = targets[..., 0:1]
-        box2_y1 = targets[..., 1:2]
-        box2_x2 = targets[..., 2:3]
-        box2_y2 = targets[..., 3:4]
-
     x1 = torch.max(box1_x1, box2_x1)
     y1 = torch.max(box1_y1, box2_y1)
     x2 = torch.min(box1_x2, box2_x2)
@@ -180,13 +170,13 @@ def yolo_loss_func(predictions, target, S=7, B=1, C=5):
         # predictions should be of dimension (N, S, S, B*5+C)
         # predictions.reshape_(-1, S, S, B * 5 + C)
         predictions = predictions.reshape((-1, S, S, B * 5 + C))
-        print(predictions.shape, target.shape)
+        # print(predictions.shape, target.shape)
 
         # get best IOU for box1 and box2
-        IOU = intersection_over_union(predictions[..., C + 1:], target[..., C + 1:])
+        resp_box = intersection_over_union(predictions[..., C + 1:], target[..., C + 1:])
         # box2_IOU = intersection_over_union(predictions[..., 26:30], target[..., 21:25])
         # IOUs = torch.cat(box1_IOU.unsqueeze(0), box2_IOU.unsqueeze(0), dim=0)
-        resp_box = torch.max(IOU, dim=0)[1] # Is this the max between IOUs or somehting else
+        # resp_box = torch.max(IOU, dim=0)[1] # Is this the max between IOUs or somehting else
 
         # get indicator 𝟙obj_i
         indicator = target[..., C].unsqueeze(3)
@@ -204,12 +194,13 @@ def yolo_loss_func(predictions, target, S=7, B=1, C=5):
 
         ## object loss ##
         # confidence score for responsible box (highest IOU)
-        resp_confidence = resp_box * predictions[..., C]
-        object_loss = sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., C]))
+        resp_confidence = resp_box * predictions[..., C:C+1] # TODO could be 1 - resp_box
+        
+        object_loss = sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., C:C+1]))
 
         # no object loss
-        noobj_loss_b1 = sse(torch.flatten((1 - indicator) * predictions[..., C], start_dim=1),
-                              torch.flatten((1 - indicator) * target[..., C], start_dim=1))
+        noobj_loss_b1 = sse(torch.flatten((1 - indicator) * predictions[..., C:C+1], start_dim=1),
+                              torch.flatten((1 - indicator) * target[..., C:C+1], start_dim=1))
         # noobj_loss_b2 = sse(torch.flatten((1 - indicator) * predictions[..., 25:26], start_dim=1),
         #                       torch.flatten((1 - indicator) * target[..., 20:21], start_dim=1))
         noobj_loss = noobj_loss_b1 # + noobj_loss_b2

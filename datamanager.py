@@ -9,6 +9,7 @@ import os
 import time
 import sys
 from torch.nn.functional import one_hot
+from loss import intersection_over_union
 
 
 def retrieve_image(filename, W=112):
@@ -260,6 +261,31 @@ class DataManager:
                 if label == output.argmax():
                     correct += 1
             return correct, total
+        correct = 0
+        total = 0       
+        for data in loader(partition):
+            inputs, labels = self.features_and_response(data)
+            outputs = classifier(inputs) 
+            correct_inc, total_inc = accuracy(outputs, labels)
+            correct += correct_inc
+            total += total_inc
+        return correct / total
+    
+    def yolo_evaluate(self, classifier, partition):
+        def loader(partition):
+            if partition == 'train':
+                return self.train(40)
+            else:
+                return self.test()
+        def accuracy(outputs, labels):
+            correct = 0
+            total = 0
+            for (output, label) in zip(outputs, labels):
+                total += 1
+                if label == output.argmax():
+                    correct += 1
+            return correct, total
+        
         correct = 0
         total = 0       
         for data in loader(partition):

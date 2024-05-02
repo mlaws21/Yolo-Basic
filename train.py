@@ -131,8 +131,8 @@ pretrain_specs = [
 yolo_specs = [
     ("conv", (3, 20, 1)),
     ("relu", ()),
-    ("conv", (3, 20, 1)),
-    ("relu", ()),
+    # ("conv", (3, 20, 1)),
+    # ("relu", ()),
     ("pool", (4, -1, 4)),
     ("conv", (3, 20, 1)),
     ("relu", ()),

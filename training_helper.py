@@ -120,7 +120,7 @@ def yolo_training(net, manager, batch_size,
             # ground = torch.cat((oh_response, boxes), dim=1)
             
             # print(ground )
-            print(output.shape, response.shape)
+            # print(output.shape, response.shape)
             batch_loss = loss(output, response)
             batch_loss.backward()
             optimizer.step()
