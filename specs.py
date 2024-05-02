@@ -1,10 +1,16 @@
 pretrain_specs = [
     ("conv", (3, 20, 1)),
     ("relu", ()),
+    ("conv", (1, 20, 1)),
+    ("relu", ()),
     ("conv", (3, 20, 1)),
+    ("relu", ()),
+    ("conv", (1, 20, 1)),
     ("relu", ()),
     ("pool", (4, -1, 4)),
     ("conv", (3, 20, 1)),
+    ("relu", ()),
+    ("conv", (1, 20, 1)),
     ("relu", ()),
     ("pool", (4, -1, 4)),
     ("flatten", ()),
@@ -54,6 +60,8 @@ additional_yolo_specs = [
 ]
 
 # TODO I think we need a softmax somewhere...
+
+# TODO: lets shrink to 4x4
 
 # model_specs = [
 #     ("conv", (7, 32, 2)),

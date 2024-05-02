@@ -1,6 +1,8 @@
 import torch
 from torch.nn import Unfold, Parameter, Module, init, Sequential, LayerNorm
+from torch.nn import Conv2d, MaxPool2d
 from cnn_helper import convolve
+DEVICE='cpu'
 
 class ConvLayer(Module):
     """A convolutional layer for images.
@@ -13,8 +15,8 @@ class ConvLayer(Module):
         super(ConvLayer, self).__init__()
         self.stride = stride
         self.kappa = Parameter(torch.empty(num_kernels, input_channels, 
-                                           kernel_size, kernel_size))
-        self.offset = Parameter(torch.empty(num_kernels, 1, 1))
+                                           kernel_size, kernel_size, device=DEVICE))
+        self.offset = Parameter(torch.empty(num_kernels, 1, 1, device=DEVICE))
         self.padding = padding
         # initializes the parameters
         init.kaiming_uniform_(self.kappa)
@@ -22,6 +24,8 @@ class ConvLayer(Module):
     
     def forward(self, x):
         """This will only work after you've implemented convolve (above)."""
+        x = x.to(DEVICE)       
+        
         out = self.offset + convolve(self.kappa, x, 
                                       self.stride, self.padding)
         
@@ -42,7 +46,7 @@ class MaxPool(Module):
 
     def forward(self, x):
         
-
+        x = x.to(DEVICE)       
         num_images, num_channels, _, width  = x.size()
 
         unfolder = Unfold(kernel_size=self.kernel_size, padding=self.padding, stride=self.stride)
@@ -76,6 +80,7 @@ class Flatten(Module):
         super().__init__()
     
     def forward(self, x):
+        x = x.to(DEVICE)       
         # print(torch.flatten(x, start_dim=1))
         return torch.flatten(x, start_dim=1)
     
@@ -102,6 +107,7 @@ class ReLU(torch.nn.Module):
         super().__init__()
 
     def forward(self, x):
+        x = x.to(DEVICE)       
         return x.clamp(min=0) 
     
 
@@ -124,7 +130,7 @@ class Dense(torch.nn.Module):
         
         """
         super(Dense, self).__init__()
-        self.weight = Parameter(torch.empty(output_size, 1+input_size))
+        self.weight = Parameter(torch.empty(output_size, 1+input_size, device=DEVICE))
         init.kaiming_uniform_(self.weight)
         
     def unit_weights(self):
@@ -144,8 +150,9 @@ class Dense(torch.nn.Module):
         [[1.0, 6.2, 127.0], [1.0, 5.4, 129.0]]. Then, it takes the dot 
         product of the weight vector with each of the new feature vectors.
         
-        """        
-        x2 = torch.cat([torch.ones(x.shape[0],1),x], dim=1)
+        """
+        x = x.to(DEVICE)       
+        x2 = torch.cat([torch.ones(x.shape[0],1, device=DEVICE),x], dim=1)
         # print(torch.matmul(self.weight,x2.t()).t())
         # print(torch.softmax(torch.matmul(self.weight,x2.t()).t(), dim=1))
 
@@ -187,12 +194,14 @@ def build_net(specs, is_greyscale=True, previous_num_k=None):
             
             model.add_module(layer_name, 
                              ConvLayer(previous_num_k, num_k, k_size, stride, padding))
+            # model.add_module(layer_name, Conv2d(previous_num_k, num_k, k_size, stride=stride, padding=padding))
             previous_num_k = num_k
             
         elif layer_type == "pool":
             k_size, _, stride = layer_spec
             
             model.add_module(layer_name, MaxPool(kernel_size=k_size, stride=stride, padding=0))
+            # model.add_module(layer_name, MaxPool2d(k_size, stride=stride))
             
         elif layer_type == "flatten":
             model.add_module(layer_name, Flatten())

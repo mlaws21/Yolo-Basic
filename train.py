@@ -46,14 +46,14 @@ def get_yolo_net(pt_specs, yolo_added_spec):
         net.add_module(str(ctr), layer)
         ctr += 1
         
-        if isinstance(layer, ConvLayer):
-            net.add_module(str(ctr), ReLU())
-            ctr += 1
+        # if isinstance(layer, ConvLayer):
+        #     net.add_module(str(ctr), ReLU())
+        #     ctr += 1
             
-            net.add_module(str(ctr), ConvLayer(20, 20, 1, 1, 0))
-            ctr += 1
+        #     net.add_module(str(ctr), ConvLayer(20, 20, 1, 1, 0))
+        #     ctr += 1
 
-    net.requires_grad_(False)
+    # net.requires_grad_(False)
     
     newnet = build_net(yolo_added_spec, previous_num_k=20)
     for layer in newnet:
@@ -85,12 +85,12 @@ def run_yolo(data_config, n_epochs=10):
     return best_net
 
 def pretrain():
-    best_net = pre_train('one_shape/data.json', n_epochs=10)
-    torch.save(best_net.state_dict(), "pretrain.pt")
+    best_net = pre_train('one_shape/data.json', n_epochs=20)
+    torch.save(best_net.state_dict(), "pretrain_gpu.pt")
     
 def train():
     best_net = run_yolo('large/data.json', n_epochs=100)
-    torch.save(best_net.state_dict(), "yolo.pt")
+    torch.save(best_net.state_dict(), "yolo1.pt")
 
 def main():
 

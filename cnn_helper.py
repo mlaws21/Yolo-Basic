@@ -1,5 +1,6 @@
 import torch
 from torch.nn import Unfold, Parameter, Module, init, Sequential
+DEVICE="cpu"
 
 def create_kernel_row_matrix(kernels):
     """
@@ -8,8 +9,10 @@ def create_kernel_row_matrix(kernels):
     and output.
     
     """
+    kernels = kernels.to(DEVICE)
     num_kernels = kernels.size(dim=0)
-    return torch.reshape(kernels, (num_kernels, -1))
+    out = torch.reshape(kernels, (num_kernels, -1))
+    return out
     
 
 
@@ -20,6 +23,7 @@ def create_window_column_matrix(images, window_width, stride):
     and output.
     
     """
+    images = images.to(DEVICE)
     unfold = Unfold(kernel_size=(window_width, window_width), stride=stride)
     unfolded = unfold(images)
     return torch.cat([x for x in unfolded], dim=1)
@@ -37,10 +41,11 @@ def pad(images, padding):
     image in the tensor.
     
     """
-    
+    images = images.to(DEVICE)
     num_images, num_channels, height, width = images.size()
-    top = torch.zeros(num_images, num_channels, padding, width)
-    side = torch.zeros(num_images, num_channels, height + 2*padding, padding)
+    top = torch.zeros(num_images, num_channels, padding, width, device=DEVICE)
+    side = torch.zeros(num_images, num_channels, height + 2*padding, padding, device=DEVICE)
+    # print(images, top)
     bpad = torch.cat([images, top], dim=-2)
     tpad = torch.cat([top, bpad], dim=-2)
     lpad = torch.cat([side, tpad], dim=-1)
@@ -60,7 +65,6 @@ def convolve(kernels, images, stride, padding):
     num_kernels, _, height, width = kernels.size()
     # num_images, num_channels, img_height, img_width = images.size()
     krm = create_kernel_row_matrix(kernels)
-
     padded_images = pad(images, padding)
     num_images, _, img_height, img_width = padded_images.size()
 

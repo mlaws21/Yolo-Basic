@@ -11,6 +11,7 @@ import sys
 from torch.nn.functional import one_hot
 from loss import intersection_over_union
 
+
 from utils import (
     non_max_suppression,
     mean_average_precision,
@@ -214,6 +215,8 @@ class DataManager:
         
         
         resp = convert_to_output(labels, batch[self.box_key])
+ 
+        
 
         # print(resp)
         return inputs, resp

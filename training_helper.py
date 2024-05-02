@@ -3,6 +3,8 @@ import torch
 from tqdm import tqdm
 from copy import deepcopy
 from datamanager import TrainingMonitor
+
+DEVICE='cpu'
 # from eval import evaluate
 
 
@@ -83,6 +85,8 @@ def minibatch_training(net, manager, batch_size,
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
             best_accuracy = dev_accuracy
+            torch.save(best_net.state_dict(), "pretrain_intermediate.pt")
+            
     monitor.stop()
     return best_net, monitor
 
@@ -114,7 +118,12 @@ def yolo_training(net, manager, batch_size,
         for i, data in tqdm(enumerate(train_loader, 0)):
             features, response = manager.features_boxes_and_response(data)
             optimizer.zero_grad()
+            
+            features = features.to(DEVICE)
+            response = response.to(DEVICE)
             output = net(features)
+
+            # output.to(DEVICE)
             # print(response)
             # oh_response = one_hot(response)
             # ground = torch.cat((oh_response, boxes), dim=1)
@@ -132,5 +141,6 @@ def yolo_training(net, manager, batch_size,
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
             best_accuracy = dev_accuracy
+            torch.save(best_net.state_dict(), "yolo_intermediate.pt")
     monitor.stop()
     return best_net, monitor
