@@ -164,7 +164,7 @@ class Dense(torch.nn.Module):
   
 # ]
 
-def build_net(specs, is_greyscale=True):
+def build_net(specs, is_greyscale=True, previous_num_k=None):
     """
     Builds a CNN with two convolutional layers and two feedforward layers.
     
@@ -177,7 +177,8 @@ def build_net(specs, is_greyscale=True):
     model = Sequential()
     # input_channels = 1 # bc greyscale
     layer_num = 0
-    previous_num_k = 1 if is_greyscale else 3
+    if previous_num_k is None:
+        previous_num_k = 1 if is_greyscale else 3
     for layer_type, layer_spec in specs:
         layer_name = layer_type + str(layer_num)
         if layer_type == "conv":

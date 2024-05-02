@@ -215,9 +215,15 @@ def make_synth_data(folder, numX):
     
         
 def main():
-    make_synth_data("one_shape/train/", 1000)
+    make_synth_data("large/train/", 10000)
     
-    make_synth_data("one_shape/test/", 100)
+    make_synth_data("large/test/", 100)
+    
+    # make_synth_data("quicktest/test/", 100)
+    
+
+    
+    
         
     # drawPent("pent")
     # drawO("o")

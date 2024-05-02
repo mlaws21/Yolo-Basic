@@ -127,7 +127,7 @@ def yolo_training(net, manager, batch_size,
             monitor.report_batch_loss(epoch, i, batch_loss.data.item())            
         net.eval() # puts the module in "evaluation mode", e.g. ensures
                    # requires_grad is off for the parameters
-        dev_accuracy = manager.evaluate(net, "test")
+        dev_accuracy = manager.yolo_evaluate(net, "test")
         monitor.report_accuracies(epoch, None, dev_accuracy)
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
