@@ -3,4 +3,5 @@ imagenette*/*
 *voc*/*
 *XO*/*
 *.DS_Store*
-*shapes*/*
+*shape*/*
+
