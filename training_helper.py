@@ -141,6 +141,6 @@ def yolo_training(net, manager, batch_size,
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
             best_accuracy = dev_accuracy
-            torch.save(best_net.state_dict(), "yolo_intermediate.pt")
+            torch.save(best_net.state_dict(), "yolo_small_conf_boost_intermediate.pt")
     monitor.stop()
     return best_net, monitor

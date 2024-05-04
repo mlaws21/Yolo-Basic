@@ -151,8 +151,9 @@ class Dense(torch.nn.Module):
         product of the weight vector with each of the new feature vectors.
         
         """
-        x = x.to(DEVICE)       
-        x2 = torch.cat([torch.ones(x.shape[0],1, device=DEVICE),x], dim=1)
+        
+        # x = x.to(DEVICE)       
+        x2 = torch.cat([torch.ones((x.shape[0],1), device=DEVICE),x], dim=1)
         # print(torch.matmul(self.weight,x2.t()).t())
         # print(torch.softmax(torch.matmul(self.weight,x2.t()).t(), dim=1))
 
