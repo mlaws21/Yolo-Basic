@@ -26,12 +26,14 @@ def id(basepath, img_path, model, catagories):
     
     for i in range(7):
         for j in range(7):
-            print(out[i,j,:5].argmax())
-            print(out[i,j,5].argmax())
+            
+
+            print(i, j, out[i,j,:5].argmax())
+            # print(out[i,j,5])
             print()
             
     
-    return out
+    return ""
     # return out
     
     
@@ -53,13 +55,13 @@ def main():
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
     model = get_yolo_net(pretrain_specs, additional_yolo_specs)
-    model.load_state_dict(torch.load("yolo.pt"))
+    model.load_state_dict(torch.load("yolo1.pt"))
     model.eval()
     model.requires_grad_(False)
 
     # print(compute_test_accuracy(model, manager))
     print(manager.categories)
-    id_ui_test("quicktest/test", model, manager.categories)
+    id_ui("quicktest/test", model, manager.categories)
     
 if __name__ == "__main__":
     main()

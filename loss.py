@@ -126,7 +126,7 @@ class YoloLoss(torch.nn.Module):
         overall_loss = self.l_coord * box_loss + object_loss + self.l_noobj * noobj_loss + class_loss
         return overall_loss
     
-def yolo_loss_func(predictions, target, S=7, B=1, C=5):
+def yolo_loss_func(predictions, target, S=3, B=1, C=5):
     
         l_coord = 5
         l_noobj = 0.5
@@ -160,6 +160,8 @@ def yolo_loss_func(predictions, target, S=7, B=1, C=5):
         ## object loss ##
         # confidence score for responsible box (highest IOU)
         resp_confidence = resp_box * predictions[..., C:C+1] # TODO could be 1 - resp_box
+        # print(torch.sum(predictions[..., C:C+1]))
+        # print(predictions[..., C:C+1].shape)
         
         object_loss = sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., C:C+1]))
 
