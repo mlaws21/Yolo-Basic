@@ -89,8 +89,8 @@ def pretrain():
     torch.save(best_net.state_dict(), "pretrain_small.pt")
     
 def train():
-    best_net = run_yolo('one_shape/data.json', n_epochs=100)
-    torch.save(best_net.state_dict(), "temp.pt")
+    best_net = run_yolo('large/data.json', n_epochs=100)
+    torch.save(best_net.state_dict(), "yolo_small.pt")
 
 def main():
 
