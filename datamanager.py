@@ -103,7 +103,7 @@ class DataPartition(Dataset):
 # TODO this only works for 1 shape per image
 # C is catagories, S is grid size
 # assume batched input
-def convert_to_output(labs_list, boxes_list, S=7, C=5):
+def convert_to_output(labs_list, boxes_list, S=3, C=5):
     assert len(labs_list) == len(boxes_list)
     batch_out = []
     for i in range(len(labs_list)):

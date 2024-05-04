@@ -75,7 +75,7 @@ def run_yolo(data_config, n_epochs=10):
     manager = DataManager(train_set, test_set)
     loss = yolo_loss_func
     learning_rate = .001
-    net = get_yolo_net(pretrain_specs, additional_yolo_specs)
+    net = get_yolo_net(pretrain_small_specs, additional_yolo_specs)
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
@@ -89,7 +89,7 @@ def pretrain():
     torch.save(best_net.state_dict(), "pretrain_small.pt")
     
 def train():
-    best_net = run_yolo('large/data.json', n_epochs=100)
+    best_net = run_yolo('one_shape/data.json', n_epochs=100)
     torch.save(best_net.state_dict(), "yolo_small.pt")
 
 def main():
