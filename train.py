@@ -94,9 +94,9 @@ def train():
 
 def main():
 
-    pretrain()
+    # pretrain()
     # print(get_yolo_net(additional_yolo_specs))
-    # train()
+    train()
 
     
     
