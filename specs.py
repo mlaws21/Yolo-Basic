@@ -114,6 +114,23 @@ additional_yolo_specs = [
     
 ]
 
+additional_yolo_wide_specs = [
+    ("conv", (3, 64, 1)),
+    ("relu", ()),
+    ("conv", (1, 64, 1)),
+    ("relu", ()),
+    ("conv", (3, 64, 1)),
+    ("relu", ()),
+    ("conv", (1, 64, 1)),
+    ("relu", ()),
+    ("flatten", ()),
+    ("dense", (64 * (112 // 32)**2, 2048)),
+    ("relu", ()),
+    ("dense", (2048, 3 * 3 * 10)),
+    ("relu", ()),
+    
+]
+
 # TODO I think we need a softmax somewhere...
 
 # TODO: lets shrink to 4x4

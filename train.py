@@ -5,7 +5,7 @@ from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_traini
 from model import build_net
 from datamanager import DataPartition, DataManager
 from loss import yolo_loss_func
-from specs import pretrain_specs, yolo_specs, additional_yolo_specs, pretrain_small_specs, pretrain_wide_specs
+from specs import pretrain_specs, yolo_specs, additional_yolo_specs, pretrain_small_specs, pretrain_wide_specs, additional_yolo_wide_specs
 from model import Flatten, ConvLayer, ReLU
 from torch.nn import Sequential
 
@@ -34,7 +34,7 @@ def get_yolo_net(pt_specs, yolo_added_spec):
     
 
     model = build_net(pt_specs)
-    model.load_state_dict(torch.load("pretrain_small.pt"))
+    model.load_state_dict(torch.load("pretrain_wide.pt"))
     # model.eval()
     # model.requires_grad_(False)
     net = Sequential()
@@ -55,7 +55,7 @@ def get_yolo_net(pt_specs, yolo_added_spec):
 
     # net.requires_grad_(False)
     
-    newnet = build_net(yolo_added_spec, previous_num_k=32)
+    newnet = build_net(yolo_added_spec, previous_num_k=64)
     for layer in newnet:
         net.add_module(str(ctr), layer)
         ctr += 1
@@ -102,7 +102,7 @@ def run_yolo(data_config, n_epochs=10):
     manager = DataManager(train_set, test_set)
     loss = yolo_loss_func
     learning_rate = .001
-    net = resume_train(pretrain_small_specs, additional_yolo_specs)
+    net = get_yolo_net(pretrain_wide_specs, additional_yolo_wide_specs)
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
@@ -113,11 +113,11 @@ def run_yolo(data_config, n_epochs=10):
 
 def pretrain():
     best_net = pre_train('one_shape/data.json', n_epochs=20)
-    torch.save(best_net.state_dict(), "pretrain_small.pt")
+    torch.save(best_net.state_dict(), "pretrain64.pt")
     
 def train():
-    best_net = run_yolo('large/data.json', n_epochs=100)
-    torch.save(best_net.state_dict(), "yolo_small_cont.pt")
+    best_net = run_yolo('one_shape/data.json', n_epochs=100)
+    torch.save(best_net.state_dict(), "yolo64.pt")
 
 def main():
 
