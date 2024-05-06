@@ -179,5 +179,5 @@ def yolo_loss_func(predictions, target, S=3, B=1, C=5):
         class_loss = sse(torch.flatten(indicator * predictions[..., :C], end_dim=-2), torch.flatten(indicator * target[..., :C], end_dim=-2))
 
         # make sure to include lambdas
-        overall_loss = l_coord * box_loss + 25 * object_loss + l_noobj * noobj_loss + class_loss
+        overall_loss = l_coord * box_loss +  object_loss + l_noobj * noobj_loss + class_loss
         return overall_loss
