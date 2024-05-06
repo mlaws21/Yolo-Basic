@@ -118,7 +118,7 @@ def convert_to_output(labs_list, boxes_list, S=3, C=5):
         out_labs[row, col, label] = 1
         out_labs[row, col, C:] = torch.tensor([conf, x_cell, y_cell, width_cell, height_cell])
         batch_out.append(out_labs)
-        print(out_labs)
+        # print(out_labs)
     
     return torch.stack(batch_out)
     # labs = 

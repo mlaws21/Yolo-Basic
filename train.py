@@ -62,6 +62,33 @@ def get_yolo_net(pt_specs, yolo_added_spec):
     
     print(net)
     return net
+
+
+
+def resume_train(pt_specs, yolo_added_spec):
+    
+
+    model = build_net(pt_specs)
+    # model.load_state_dict(torch.load("pretrain_small.pt"))
+    # model.eval()
+    # model.requires_grad_(False)
+    net = Sequential()
+    ctr = 0
+    for layer in model:
+
+        if isinstance(layer, Flatten):
+            break
+        net.add_module(str(ctr), layer)
+        ctr += 1
+        
+    
+    newnet = build_net(yolo_added_spec, previous_num_k=32)
+    for layer in newnet:
+        net.add_module(str(ctr), layer)
+        ctr += 1
+    
+    net.load_state_dict(torch.load("yolo_small.pt"))
+    return net
  
 def run_yolo(data_config, n_epochs=10):    
     """
@@ -75,7 +102,7 @@ def run_yolo(data_config, n_epochs=10):
     manager = DataManager(train_set, test_set)
     loss = yolo_loss_func
     learning_rate = .001
-    net = get_yolo_net(pretrain_small_specs, additional_yolo_specs)
+    net = resume_train(pretrain_small_specs, additional_yolo_specs)
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
@@ -89,8 +116,8 @@ def pretrain():
     torch.save(best_net.state_dict(), "pretrain_small.pt")
     
 def train():
-    best_net = run_yolo('one_shape/data.json', n_epochs=100)
-    torch.save(best_net.state_dict(), "temp.pt")
+    best_net = run_yolo('large/data.json', n_epochs=100)
+    torch.save(best_net.state_dict(), "yolo_small_cont.pt")
 
 def main():
 
