@@ -116,7 +116,7 @@ def pretrain():
     torch.save(best_net.state_dict(), "pretrain64.pt")
     
 def train():
-    best_net = run_yolo('one_shape/data.json', n_epochs=100)
+    best_net = run_yolo('large/data.json', n_epochs=100)
     torch.save(best_net.state_dict(), "yolo64.pt")
 
 def main():
