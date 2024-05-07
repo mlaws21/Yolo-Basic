@@ -1,9 +1,9 @@
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 
 # Load the image
 
-def add_box(drawer, bb, rc, color, size, s):
+def add_box(drawer, font, bb, rc, color, text, size, s):
     cx_rel, cy_rel, width_rel, height_rel = bb
     width, height = (width_rel / s) * size, (height_rel / s) * size
     row, col = rc
@@ -13,26 +13,49 @@ def add_box(drawer, bb, rc, color, size, s):
     
     drawer.rectangle([top_left_x, top_left_y, top_left_x + width, top_left_y + height], outline=color, width=2)
     
-    
 
-def display(image_path, bb, rc, colors, size=400, s=3):
+# Get the size of the text
+
+    drawer.text((top_left_x, top_left_y - 25), text, fill=color, font=font)  
+    # Calculate the position to center the text
+    # x = (drawer.width - text_width) // 2
+    # y = (drawer.height - text_height) // 2
+
+    # # Draw the text on the image
+    # drawer.text((x, y), text, fill="black", font=font)
+
+
+
+def display(image_path, bb, rc, colors, text, size=400, s=3):
     
 
     image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+    font = ImageFont.truetype("./TitilliumWeb-Bold.ttf", 18)  
+    # font = ImageFont.load_default()
     
-    assert len(bb) == len(rc)
+    
+    assert len(bb) == len(rc) == len(colors) == len(text)
     
     for i in range(len(bb)):
-        add_box(draw, bb[i], rc[i], colors[i], size, s)
+        add_box(draw, font, bb[i], rc[i], colors[i], text[i], size, s)
         
     image.show()
 
-# image_path = "./quicktest/test/X/31.png"
 
-# BOUNDING_BOX_1 = [0.6825, 0.9763, 0.3619, 0.3612]
-# RC_1 = [0, 0]
-# display(image_path, [BOUNDING_BOX_1], [RC_1])
+def main():
+    image_path = "./quicktest/test/X/31.png"
+
+    BOUNDING_BOX_1 = [0.6825, 0.9763, 0.3619, 0.3612]
+    RC_1 = [0, 0]
+    display(image_path, [BOUNDING_BOX_1], [RC_1], ["red"], ["Square"])
+    # display(image_path [BOUNDING_BOX_1], [RC_1], colors, shape)
+    
+    
+    
+if __name__ == "__main__":
+    main()
 # # Get the dimensions of the image
 # width, height = image.size
 

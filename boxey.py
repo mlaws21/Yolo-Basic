@@ -6,6 +6,7 @@ from train import get_yolo_net
 import os
 from random import randint
 from display_bb import display
+import time
 # from statistics import mean
 
 def compute_test_accuracy(model, manager):
@@ -21,7 +22,10 @@ def id(basepath, img_path, model, catagories):
         print("ERROR: File Not Found")
         return
     img = img.unsqueeze(0)
+    start = time.time()
     out = model(img)
+    end = time.time()
+    print("Compute Time:", end - start)
     out = out.reshape((-1, 3, 3, 1 * 5 + 5))
     print(out.shape)
     out = out.squeeze()
@@ -29,6 +33,7 @@ def id(basepath, img_path, model, catagories):
     bbs = []
     rcs = []
     colors = []
+    labs = []
     for row in range(3):
         for col in range(3):
             pred = out[row,col,:5]
@@ -38,17 +43,21 @@ def id(basepath, img_path, model, catagories):
                 print("Confidence:", conf) 
                 print("Prediction Weights:", pred)
                 # this may give O alot bc they are all 0
-                
-                print("Prediction:", catagories[(out[row,col,:5].argmax()).item()])
+                if torch.sum(out[row,col,:5]) == 0:
+                    shape = "?"
+                else:   
+                    shape = catagories[(out[row,col,:5].argmax()).item()]
+                print("Prediction:", shape)
                 # print(out[row,col, 6:])
                 
                 bbs.append(out[row,col, 6:])
                 rcs.append((row, col))
                 colors.append("red" if conf > 0 else "black")
+                labs.append(shape)
                 
                 print()
             
-    display(os.path.join(basepath, img_path), bbs, rcs, colors)
+    display(os.path.join(basepath, img_path), bbs, rcs, colors, labs)
     
     return ""
     # return out
@@ -72,7 +81,9 @@ def main():
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
     model = get_yolo_net(pretrain_small_specs, additional_yolo_specs)
-    model.load_state_dict(torch.load("yolo_small.pt"))
+    # model.load_state_dict(torch.load("yolo_small.pt"))
+    model.load_state_dict(torch.load("yolo_small_cont_intermediate.pt"))
+    
     model.eval()
     model.requires_grad_(False)
 
