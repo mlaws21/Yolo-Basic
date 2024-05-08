@@ -70,7 +70,9 @@ class ReLU(torch.nn.Module):
         super().__init__()
 
     def forward(self, x):
-        return x.clamp(min=0) 
+        # return x.clamp(min=0) 
+        lrlu = torch.nn.LeakyReLU(0.1)
+        return lrlu(x)
     
 
 class Dense(torch.nn.Module):

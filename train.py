@@ -5,7 +5,6 @@ from model import build_net, build_yolo_net
 from datamanager import DataPartition, DataManager
 from loss import yolo_loss, nlog_softmax_loss
 from specs import pretrain_specs, additional_yolo_specs
-
 import sys
 
 
@@ -29,7 +28,7 @@ def pretrain_helper(data_config, inter_name, n_epochs=10):
                                            optimizer=optimizer, loss=loss, inter_name=inter_name)
     return best_net
  
-def run_yolo(data_config, inter_name, n_epochs=10):    
+def run_yolo(data_config, inter_name, pt_file=None, n_epochs=10):    
     """
     Runs a training regime for a CNN.
     
@@ -41,7 +40,7 @@ def run_yolo(data_config, inter_name, n_epochs=10):
     manager = DataManager(train_set, test_set)
     loss = yolo_loss
     learning_rate = .001
-    net = build_yolo_net(pretrain_specs, additional_yolo_specs)
+    net = build_yolo_net(pretrain_specs, additional_yolo_specs, pt_file=pt_file)
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
@@ -54,8 +53,8 @@ def pretrain(json, save_name, inter_name):
     best_net = pretrain_helper(json, inter_name=inter_name, n_epochs=20)
     torch.save(best_net.state_dict(), save_name)
     
-def train(json, save_name, inter_name):
-    best_net = run_yolo(json, inter_name=inter_name, n_epochs=100)
+def train(json, save_name, inter_name, pt_file):
+    best_net = run_yolo(json, inter_name=inter_name, pt_file=pt_file, n_epochs=100)
     torch.save(best_net.state_dict(), save_name)
 
 def main():
@@ -64,15 +63,16 @@ def main():
     json = sys.argv[2]
     save_name = sys.argv[3]
     inter_name = sys.argv[4]
-    
-    
+    pt_file = sys.argv[5]
+
+
     
     if pretrain_or_train == "p":
         pretrain(json, save_name, inter_name)
     elif pretrain_or_train == "t":
-        train(json, save_name, inter_name)
+        train(json, save_name, inter_name, pt_file)
     else:
-        print("Usage: python train [p/t] [data.json file] [name to save model as] [intermediate name]")
+        print("Usage: python train.py [p/t] [data.json file] [name to save model as] [intermediate name] [pretrain file]")
 
 if __name__ == "__main__":
     main()

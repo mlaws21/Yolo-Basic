@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 from random import randint
 import os
 from math import sin, cos
+import sys
 # ratio_size = 244/400
 
 size = 400
@@ -199,7 +200,14 @@ def remove_last_char(file_path):
         file.truncate(len(contents) - 1)  # Truncate the file to remove the last character
 
 def generate_data(root: str, num_train: int, num_test: int):
-    os.mkdir(root)
+    
+    try:
+        os.mkdir(root)
+    except:
+        print(f"ERROR: Data Directory {root} already exists")
+        print(f"if you would like to continue run rm -r {root} in your terminal")
+        return
+        
     json_out = os.path.join(root, "data.json")
     f = open(json_out, "a+")
     f.write("[\n")
@@ -219,9 +227,9 @@ def generate_data(root: str, num_train: int, num_test: int):
                     
 def main():
     
-    # generate_data("temp", 100, 10)
+    generate_data("shapes", 1000, 10)
     
-    draw_star_and_O("multi")
+    # draw_star_and_O("multi")
 
 
 if __name__ == "__main__":
