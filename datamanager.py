@@ -194,8 +194,6 @@ class DataManager:
         resp = convert_to_output(labels, batch[self.box_key])
  
         
-
-        # print(resp)
         return inputs, resp
     
     def features_and_response(self, batch):
@@ -246,7 +244,7 @@ class DataManager:
             total = 0
             for (output, label) in zip(outputs, labels):
                 total += 1
-                # print(output, label, self.categories[label])
+
                 if label == output.argmax():
                     correct += 1
             return correct, total
@@ -367,18 +365,3 @@ class TrainingMonitor:
         plt.ylabel('test accuracy')
         plt.legend()
 
-
-
-def nlog_softmax_loss(X, y):
-    """
-    A loss function based on softmax, described in colonels2.ipynb. 
-    X is the (batch) output of the neural network, while y is a response 
-    vector.
-    
-    See the unit tests in test.py for expected functionality.
-    
-    """    
-    smax = torch.softmax(X, dim=1)
-    correct_probs = torch.gather(smax, 1, y.unsqueeze(1))
-    nlog_probs = -torch.log(correct_probs)
-    return torch.mean(nlog_probs) 

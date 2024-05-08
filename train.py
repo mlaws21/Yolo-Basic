@@ -1,9 +1,9 @@
 import torch
 import torch.optim as optim
-from training_helper import nlog_softmax_loss, minibatch_training, yolo_training
+from training_protocols import minibatch_training, yolo_training
 from model import build_net, build_yolo_net
 from datamanager import DataPartition, DataManager
-from loss import yolo_loss_func
+from loss import yolo_loss, nlog_softmax_loss
 from specs import pretrain_specs, additional_yolo_specs
 
 import sys
@@ -39,7 +39,7 @@ def run_yolo(data_config, inter_name, n_epochs=10):
     train_set = DataPartition(data_config, './', 'train', resize_width=image_width)
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
-    loss = yolo_loss_func
+    loss = yolo_loss
     learning_rate = .001
     net = build_yolo_net(pretrain_specs, additional_yolo_specs)
 

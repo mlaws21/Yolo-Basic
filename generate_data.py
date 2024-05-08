@@ -159,7 +159,39 @@ def generate_set(folder, numX):
             f.write("\"box\": \"" + bb_data + "\"\n},\n")
             
     f.close()
+
+def draw_star_and_O(name):
+    image = Image.new("RGB", (size, size), "white")
+    draw = ImageDraw.Draw(image)
+
+    line_length = randint(50, 200)
+    ele_size = int(line_length / (2**0.5))
+    top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
+
+    # Draw Star
+    points = [
+        (top_left_x + ele_size // 2, top_left_y),
+        (top_left_x + 2 * ele_size // 3, top_left_y + ele_size // 3),
+        (top_left_x + ele_size, top_left_y + ele_size // 2),
+        (top_left_x + 2 * ele_size // 3, top_left_y + 2 * ele_size // 3),
+        (top_left_x + ele_size // 2, top_left_y + ele_size),
+        (top_left_x + ele_size // 3, top_left_y + 2 * ele_size // 3),
+        (top_left_x, top_left_y + ele_size // 2),
+        (top_left_x + ele_size // 3, top_left_y + ele_size // 3),
+    ]
+    draw.polygon(points, outline="yellow", width=5)
     
+    
+    line_length = randint(50, 200)
+    ele_size = int(line_length / (2**0.5))
+    top_left_x, top_left_y = randint(0, size - ele_size), randint(0, size - ele_size)
+    
+    draw.ellipse([top_left_x, top_left_y, top_left_x + ele_size, top_left_y + ele_size ], outline="blue", width=5)
+
+    
+    image.save(name + ".png")
+    image.close()
+
 def remove_last_char(file_path):
     with open(file_path, 'r+') as file:
         contents = file.read()
@@ -187,7 +219,9 @@ def generate_data(root: str, num_train: int, num_test: int):
                     
 def main():
     
-    generate_data("temp", 100, 10)
+    # generate_data("temp", 100, 10)
+    
+    draw_star_and_O("multi")
 
 
 if __name__ == "__main__":
