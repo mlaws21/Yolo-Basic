@@ -46,7 +46,7 @@ def nlog_softmax_loss(X, y):
     return torch.mean(nlog_probs) 
 
 def minibatch_training(net, manager, batch_size, 
-                       n_epochs, optimizer, loss):
+                       n_epochs, optimizer, loss, inter_name):
     """
     Trains a neural network using the training partition of the 
     provided DataManager.
@@ -85,13 +85,14 @@ def minibatch_training(net, manager, batch_size,
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
             best_accuracy = dev_accuracy
-            torch.save(best_net.state_dict(), "pretrain_intermediate.pt")
+            if inter_name is not None:
+                torch.save(best_net.state_dict(), inter_name)
             
     monitor.stop()
     return best_net, monitor
 
 def yolo_training(net, manager, batch_size, 
-                       n_epochs, optimizer, loss):
+                       n_epochs, optimizer, loss, inter_name):
     """
     Trains a neural network using the training partition of the 
     provided DataManager.
@@ -141,6 +142,7 @@ def yolo_training(net, manager, batch_size,
         if dev_accuracy >= best_accuracy:
             best_net = deepcopy(net)     
             best_accuracy = dev_accuracy
-            torch.save(best_net.state_dict(), "yolo_small_cont_intermediate.pt")
+            if inter_name is not None:
+                torch.save(best_net.state_dict(), inter_name)
     monitor.stop()
     return best_net, monitor
