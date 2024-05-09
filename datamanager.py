@@ -8,18 +8,6 @@ import json
 import os
 import time
 import sys
-from torch.nn.functional import one_hot
-from loss import intersection_over_union
-
-
-from utils import (
-    non_max_suppression,
-    mean_average_precision,
-    intersection_over_union,
-    cellboxes_to_boxes,
-    # get_bboxes
-)
-
 
 def retrieve_image(filename, W=112):
     """
@@ -65,7 +53,7 @@ class DataPartition(Dataset):
                 instance = {'image': retrieve_image(img_filename, resize_width), 
                             'category': datum['label'], 
                             'filename': datum['filename'],
-                            'box': datum['box'] # TODO COMMENT IF NO BOUNDING
+                            'box': datum['box']
                             }
                 self.data.append(instance)
                 self._categories.add(datum['label'])
@@ -100,9 +88,6 @@ class DataPartition(Dataset):
         return self._categories
 
 
-# TODO this only works for 1 shape per image
-# C is catagories, S is grid size
-# assume batched input
 def convert_to_output(labs_list, boxes_list, S=3, C=5):
     assert len(labs_list) == len(boxes_list)
     batch_out = []
@@ -118,19 +103,10 @@ def convert_to_output(labs_list, boxes_list, S=3, C=5):
         out_labs[row, col, label] = 1
         out_labs[row, col, C:] = torch.tensor([conf, x_cell, y_cell, width_cell, height_cell])
         batch_out.append(out_labs)
-        # print(out_labs)
+
     
     return torch.stack(batch_out)
-    # labs = 
-    # ground = torch.cat((oh_response, boxes), dim=1)
-    
-    # return torch.Tensor(f_box_list)
 
-# def combine_box_and_labs(labs, boxes):
-
-    
-
-# boxes = torch.stack([convert_box(box) for box in batch[self.box_key]], dim=0)
 
 class DataManager:
     
@@ -218,8 +194,6 @@ class DataManager:
         resp = convert_to_output(labels, batch[self.box_key])
  
         
-
-        # print(resp)
         return inputs, resp
     
     def features_and_response(self, batch):
@@ -270,7 +244,7 @@ class DataManager:
             total = 0
             for (output, label) in zip(outputs, labels):
                 total += 1
-                # print(output, label, self.categories[label])
+
                 if label == output.argmax():
                     correct += 1
             return correct, total
@@ -284,59 +258,7 @@ class DataManager:
             total += total_inc
         return correct / total
     
-    def get_bboxes(self,
-                    loader,
-                    model,
-                    iou_threshold,
-                    threshold,
-                    pred_format="cells",
-                    box_format="midpoint",
-                    device="cuda",
-                    ):
-        all_pred_boxes = []
-        all_true_boxes = []
-
-        # make sure model is in eval before get bboxes
-        model.eval()
-        train_idx = 0
-
-        for batch_idx, data in enumerate(loader):
-            x, labels = self.features_boxes_and_response(data)
-            # x = x.to(device)
-            # labels = labels.to(device)
-
-            with torch.no_grad():
-                predictions = model(x)
-
-            batch_size = x.shape[0]
-            true_bboxes = cellboxes_to_boxes(labels)
-            bboxes = cellboxes_to_boxes(predictions)
-
-            for idx in range(batch_size):
-                nms_boxes = non_max_suppression(
-                    bboxes[idx],
-                    iou_threshold=iou_threshold,
-                    threshold=threshold,
-                    box_format=box_format,
-                )
-
-
-                #if batch_idx == 0 and idx == 0:
-                #    plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes)
-                #    print(nms_boxes)
-
-                for nms_box in nms_boxes:
-                    all_pred_boxes.append([train_idx] + nms_box)
-
-                for box in true_bboxes[idx]:
-                    # many will get converted to 0 pred
-                    if box[1] > threshold:
-                        all_true_boxes.append([train_idx] + box)
-
-                train_idx += 1
-
-        model.train()
-        return all_pred_boxes, all_true_boxes
+   
     def yolo_evaluate(self, classifier, partition):
         
         def loader(partition):
@@ -350,7 +272,7 @@ class DataManager:
             total = 0
             for (output, label) in zip(outputs, labels):
                 total += 1
-                # print(output, label, self.categories[label])
+
                 if label == output[0:5].argmax():
                     correct += 1
             return correct, total
@@ -363,25 +285,7 @@ class DataManager:
             correct += correct_inc
             total += total_inc
         return correct / total
-        
-        #pred_boxes, target_boxes = get bb_boxes
-        # mean_avg_precision(pred_boxes, target_boxes, iou_threshold)
-        # def loader(partition):
-        #     if partition == 'train':
-        #         return self.train(40)
-        #     else:
-        #         return self.test()
 
-        
-
-        # t_loader = loader(partition)
-        
-        # pred_boxes, target_boxes = self.get_bboxes(t_loader, classifier,  iou_threshold=0.5, threshold=0.4)
-        # mean_avg_prec = mean_average_precision(
-        #     pred_boxes, target_boxes, iou_threshold=0.5, box_format="midpoint")
-        # # print("yolo acc", mean_avg_prec)
-        
-        # return mean_avg_prec
 
 class TrainingMonitor:
     
@@ -461,76 +365,3 @@ class TrainingMonitor:
         plt.ylabel('test accuracy')
         plt.legend()
 
-
-
-def nlog_softmax_loss(X, y):
-    """
-    A loss function based on softmax, described in colonels2.ipynb. 
-    X is the (batch) output of the neural network, while y is a response 
-    vector.
-    
-    See the unit tests in test.py for expected functionality.
-    
-    """    
-    smax = torch.softmax(X, dim=1)
-    correct_probs = torch.gather(smax, 1, y.unsqueeze(1))
-    nlog_probs = -torch.log(correct_probs)
-    return torch.mean(nlog_probs) 
-
-# class Classifier:
-#     """
-#     Allows the trained CNN to be saved to disk and loaded back in.
-
-#     You can call a Classifier instance as a function on an image filename
-#     to obtain a probability distribution over whether it is a zebra.
-    
-#     """
-    
-#     def __init__(self, net, num_kernels, kernel_size, 
-#                  dense_hidden_size, categories, image_width):
-#         self.net = net
-#         self.num_kernels = num_kernels
-#         self.kernel_size = kernel_size
-#         self.dense_hidden_size = dense_hidden_size
-#         self.image_width = image_width
-#         self.categories = categories
- 
-#     def __call__(self, img_filename):
-#         self.net.eval()
-#         image = retrieve_image(img_filename, self.image_width)
-#         inputs = image.float().unsqueeze(dim=0)
-#         outputs = torch.softmax(self.net(inputs), dim=1)
-#         result = dict()
-#         for i, category in enumerate(self.categories):
-#             result[category] = outputs[0][i].item()
-#         return result
-
-#     def save(self, filename):
-#         model_file = filename + '.model'
-#         with torch.no_grad():
-#             torch.save(self.net.state_dict(), model_file)
-#         config = {'dense_hidden_size': self.dense_hidden_size,
-#                   'num_kernels': self.num_kernels,
-#                   'kernel_size': self.kernel_size,
-#                   'image_width': self.image_width,
-#                   'categories': self.categories,
-#                   'model_file': model_file}
-#         with open(filename + '.json', 'w') as outfile:
-#             json.dump(config, outfile)
-            
-#     @staticmethod
-#     def load(config_file):
-#         with open(config_file) as f:
-#             data = json.load(f)
-#         net = create_cnn(data['num_kernels'], 
-#                          data['kernel_size'], 
-#                          len(data['categories']),
-#                          data['dense_hidden_size'],
-#                          data['image_width'])
-#         net.load_state_dict(torch.load(data['model_file']))
-#         return Classifier(net, 
-#                           data['num_kernels'],
-#                           data['kernel_size'],                           
-#                           data['dense_hidden_size'],
-#                           data['categories'],
-#                           data['image_width'])

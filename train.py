@@ -1,15 +1,14 @@
-import torch.optim as optim
 import torch
-from data_reader import import_synth_data
-from training_helper import TrainingMonitor, nlog_softmax_loss, minibatch_training, yolo_training
-from model import build_net
+import torch.optim as optim
+from training_protocols import minibatch_training, yolo_training
+from model import build_net, build_yolo_net
 from datamanager import DataPartition, DataManager
-from loss import yolo_loss_func
-from specs import pretrain_specs, yolo_specs, additional_yolo_specs, pretrain_small_specs, pretrain_wide_specs
-from model import Flatten, ConvLayer, ReLU
-from torch.nn import Sequential
+from loss import yolo_loss, nlog_softmax_loss
+from specs import pretrain_specs, additional_yolo_specs
+import sys
 
-def pre_train(data_config, n_epochs=10):    
+
+def pretrain_helper(data_config, inter_name, n_epochs=10):    
     """
     Runs a training regime for a CNN.
     
@@ -22,75 +21,14 @@ def pre_train(data_config, n_epochs=10):
     loss = nlog_softmax_loss
     learning_rate = .001
 
-    net = build_net(pretrain_small_specs)
+    net = build_net(pretrain_specs)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = minibatch_training(net, manager, 
                                            batch_size=32, n_epochs=n_epochs, 
-                                           optimizer=optimizer, loss=loss)
+                                           optimizer=optimizer, loss=loss, inter_name=inter_name)
     return best_net
  
- 
-def get_yolo_net(pt_specs, yolo_added_spec):
-    
-
-    model = build_net(pt_specs)
-    model.load_state_dict(torch.load("pretrain_small.pt"))
-    # model.eval()
-    # model.requires_grad_(False)
-    net = Sequential()
-    ctr = 0
-    for layer in model:
-
-        if isinstance(layer, Flatten):
-            break
-        net.add_module(str(ctr), layer)
-        ctr += 1
-        
-        # if isinstance(layer, ConvLayer):
-        #     net.add_module(str(ctr), ReLU())
-        #     ctr += 1
-            
-        #     net.add_module(str(ctr), ConvLayer(20, 20, 1, 1, 0))
-        #     ctr += 1
-
-    # net.requires_grad_(False)
-    
-    newnet = build_net(yolo_added_spec, previous_num_k=32)
-    for layer in newnet:
-        net.add_module(str(ctr), layer)
-        ctr += 1
-    
-    print(net)
-    return net
-
-
-
-def resume_train(pt_specs, yolo_added_spec):
-    
-
-    model = build_net(pt_specs)
-    # model.load_state_dict(torch.load("pretrain_small.pt"))
-    # model.eval()
-    # model.requires_grad_(False)
-    net = Sequential()
-    ctr = 0
-    for layer in model:
-
-        if isinstance(layer, Flatten):
-            break
-        net.add_module(str(ctr), layer)
-        ctr += 1
-        
-    
-    newnet = build_net(yolo_added_spec, previous_num_k=32)
-    for layer in newnet:
-        net.add_module(str(ctr), layer)
-        ctr += 1
-    
-    net.load_state_dict(torch.load("yolo_small.pt"))
-    return net
- 
-def run_yolo(data_config, n_epochs=10):    
+def run_yolo(data_config, inter_name, pt_file=None, n_epochs=10):    
     """
     Runs a training regime for a CNN.
     
@@ -100,34 +38,41 @@ def run_yolo(data_config, n_epochs=10):
     train_set = DataPartition(data_config, './', 'train', resize_width=image_width)
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
     manager = DataManager(train_set, test_set)
-    loss = yolo_loss_func
+    loss = yolo_loss
     learning_rate = .001
-    net = resume_train(pretrain_small_specs, additional_yolo_specs)
+    net = build_yolo_net(pretrain_specs, additional_yolo_specs, pt_file=pt_file)
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
                                            batch_size=32, n_epochs=n_epochs, 
-                                           optimizer=optimizer, loss=loss)
+                                           optimizer=optimizer, loss=loss, inter_name=inter_name)
 
     return best_net
 
-def pretrain():
-    best_net = pre_train('one_shape/data.json', n_epochs=20)
-    torch.save(best_net.state_dict(), "pretrain_small.pt")
+def pretrain(json, save_name, inter_name):
+    best_net = pretrain_helper(json, inter_name=inter_name, n_epochs=20)
+    torch.save(best_net.state_dict(), save_name)
     
-def train():
-    best_net = run_yolo('large/data.json', n_epochs=100)
-    torch.save(best_net.state_dict(), "yolo_small_cont.pt")
+def train(json, save_name, inter_name, pt_file):
+    best_net = run_yolo(json, inter_name=inter_name, pt_file=pt_file, n_epochs=100)
+    torch.save(best_net.state_dict(), save_name)
 
 def main():
 
-    # pretrain()
-    # print(get_yolo_net(additional_yolo_specs))
-    train()
+    pretrain_or_train = sys.argv[1]
+    json = sys.argv[2]
+    save_name = sys.argv[3]
+    inter_name = sys.argv[4]
+    pt_file = sys.argv[5]
+
 
     
-    
-
+    if pretrain_or_train == "p":
+        pretrain(json, save_name, inter_name)
+    elif pretrain_or_train == "t":
+        train(json, save_name, inter_name, pt_file)
+    else:
+        print("Usage: python train.py [p/t] [data.json file] [name to save model as] [intermediate name] [pretrain file]")
 
 if __name__ == "__main__":
     main()
