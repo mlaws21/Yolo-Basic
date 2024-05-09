@@ -28,6 +28,7 @@ def id(basepath, img_path, model, catagories, jupyter=True):
     out = model(img)
     end = time.time()
     print("Compute Time:", end - start)
+    print("Esimated fps:", 60 / (end - start))
     out = out.reshape((-1, 3, 3, 1 * 5 + 5))
     # print(out.shape)
     out = out.squeeze()
@@ -41,10 +42,10 @@ def id(basepath, img_path, model, catagories, jupyter=True):
             pred = out[row,col,:5]
             conf = out[row,col,5]
             # if conf > 0 or max(pred) > 3 * torch.mean(pred):
-            if conf > 0:
+            if conf > 0.7:
                 
                 # print(img_path)
-                print("Confidence:", conf) 
+                print("Confidence:", conf.item()) 
                 # print("Prediction Weights:", pred)
                 # this may give O alot bc they are all 0
                 if torch.sum(out[row,col,:5]) == 0:
