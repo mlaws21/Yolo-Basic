@@ -16,6 +16,8 @@ def compute_test_accuracy(model, manager):
     # print(dev_accuracy)
     
 def id(basepath, img_path, model, catagories, jupyter=True):
+    
+    id_to_col = {"Square": "green", "Star": "yellow", "X": "red", "O": "blue", "Pent":"orange"}
     try:
         img = retrieve_image(os.path.join(basepath, img_path), 112)
     except:
@@ -42,7 +44,7 @@ def id(basepath, img_path, model, catagories, jupyter=True):
             if conf > 0:
                 
                 # print(img_path)
-                # print("Confidence:", conf) 
+                print("Confidence:", conf) 
                 # print("Prediction Weights:", pred)
                 # this may give O alot bc they are all 0
                 if torch.sum(out[row,col,:5]) == 0:
@@ -54,15 +56,16 @@ def id(basepath, img_path, model, catagories, jupyter=True):
                 
                 bbs.append(out[row,col, 6:])
                 rcs.append((row, col))
-                colors.append("red" if conf > 0 else "black")
+                # colors.append("red" if conf > 0 else "black")
+                colors.append("black")
                 labs.append(shape)
                 
                 # print()
             
     if jupyter:
         return display_image(os.path.join(basepath, img_path), bbs, rcs, colors, labs, jupyter=jupyter)
-    
-    
+    else:
+        display_image(os.path.join(basepath, img_path), bbs, rcs, colors, labs, jupyter=jupyter)
     # return ""
     # return out
     
@@ -86,14 +89,16 @@ def main():
     manager = DataManager(train_set, test_set)
     model = build_yolo_net(pretrain_specs, additional_yolo_specs)
     # model.load_state_dict(torch.load("yolo_small.pt"))
-    model.load_state_dict(torch.load("models/yolo.pt"))
+    model.load_state_dict(torch.load("leaky_yolo_inter.pt"))
     
     model.eval()
     model.requires_grad_(False)
 
     # print(compute_test_accuracy(model, manager))
     print(manager.categories)
+    id(".", "multi.png", model, manager.categories, jupyter=False)
     id_ui_test("DEMO/test/", model, manager.categories)
+    
     
 if __name__ == "__main__":
     main()
