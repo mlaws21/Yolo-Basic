@@ -89,7 +89,7 @@ def main():
     manager = DataManager(train_set, test_set)
     model = build_yolo_net(pretrain_specs, additional_yolo_specs)
     # model.load_state_dict(torch.load("yolo_small.pt"))
-    model.load_state_dict(torch.load("leaky_yolo_inter.pt"))
+    model.load_state_dict(torch.load("ld_yolo_inter.pt"))
     
     model.eval()
     model.requires_grad_(False)
