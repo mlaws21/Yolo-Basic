@@ -64,7 +64,7 @@ class Flatten(Module):
         return torch.flatten(x, start_dim=1)
     
     
-class ReLU(torch.nn.Module):
+class Leaky_ReLU(torch.nn.Module):
     
     def __init__(self):
         super().__init__()
@@ -73,6 +73,15 @@ class ReLU(torch.nn.Module):
         # return x.clamp(min=0) 
         lrlu = torch.nn.LeakyReLU(0.1)
         return lrlu(x)
+    
+class Dropout(torch.nn.Module):
+    def __init__(self, p):
+        super().__init__()
+        self.p = p
+    
+    def forward(self, x):
+        drop = torch.nn.Dropout(p=self.p)
+        return drop(x)
     
 
 class Dense(torch.nn.Module):
@@ -121,11 +130,14 @@ def build_net(specs, is_greyscale=True, previous_num_k=None):
             
             model.add_module(layer_name, Dense(input_size, output_size))
             
-        elif layer_type == "relu":
-            model.add_module(layer_name, ReLU())
+        elif layer_type == "l_relu":
+            model.add_module(layer_name, Leaky_ReLU())
             
         elif layer_type == "norm":
             model.add_module(layer_name, LayerNorm(layer_spec))
+        
+        elif layer_type == "drop":
+            model.add_module(layer_name, Dropout(layer_spec))
         else:
             pass
             
