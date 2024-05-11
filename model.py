@@ -1,9 +1,10 @@
 import torch
-from torch.nn import Unfold, Parameter, Module, init, Sequential, LayerNorm
+from torch.nn import Unfold, Parameter, Module, init, Sequential
 from convolve import convolve
 DEVICE='cpu'
 
 class ConvLayer(Module):
+    """A class for a convolutional neural network (CNN)."""
     
     def __init__(self, input_channels, num_kernels, 
                  kernel_size, stride, padding):
@@ -13,6 +14,7 @@ class ConvLayer(Module):
                                            kernel_size, kernel_size, device=DEVICE))
         self.offset = Parameter(torch.empty(num_kernels, 1, 1, device=DEVICE))
         self.padding = padding
+        
         # initializes the parameters
         init.kaiming_uniform_(self.kappa)
         init.zeros_(self.offset)
@@ -26,7 +28,10 @@ class ConvLayer(Module):
         
         
 class MaxPool(Module):
-
+    """A class for a Max pooling layer of a network. Implementation taken from
+    Matt's Kernels lab    
+    """
+    
     def __init__(self, kernel_size, stride, padding): 
         super().__init__()
         self.kernel_size = kernel_size
@@ -55,6 +60,8 @@ class MaxPool(Module):
     
     
 class Flatten(Module):
+    """A class to flatten a CNN (or any non flat layer) into a MxN where M is batch size and N
+    is the resulting size after flattening the old layer"""
 
     def __init__(self): 
         super().__init__()
@@ -65,16 +72,18 @@ class Flatten(Module):
     
     
 class Leaky_ReLU(torch.nn.Module):
+    """A class that implements the leaky ReLU activation / non-lnearity"""
     
     def __init__(self):
         super().__init__()
 
     def forward(self, x):
-        # return x.clamp(min=0) 
         lrlu = torch.nn.LeakyReLU(0.1)
         return lrlu(x)
     
 class Dropout(torch.nn.Module):
+    """A class that implements the dropout"""
+    
     def __init__(self, p):
         super().__init__()
         self.p = p
@@ -85,6 +94,8 @@ class Dropout(torch.nn.Module):
     
 
 class Dense(torch.nn.Module):
+    """A class that implements a dense layer of a neural net"""
+    
     
     def __init__(self, input_size, output_size):
 
@@ -99,6 +110,27 @@ class Dense(torch.nn.Module):
         return torch.matmul(self.weight, x_and_offset.t()).t() 
     
 def build_net(specs, is_greyscale=True, previous_num_k=None):
+    """A function to build a model from a spec list --- a list of specifications defining each
+    layer of the model
+    
+    Spec Format:
+    
+    CNN (conv): (kernel size, num kernels, stride)
+    MaxPool (pool): (kernel size, -1, stride)
+    Flatten (flatten): None
+    Dense (dense): None
+    Leaky ReLU (l_relu): None
+    Dropout (drop): None
+    
+    Args:
+        specs (list): list of all specifications following the spec format
+        is_greyscale (bool, optional): is the image read in using greyscale. Defaults to True.
+        previous_num_k (_type_, optional): Number of kernels in the previous layer. Only relavent
+        if we are starting from the output of a convolutionallayer not from an image. Defaults to None.
+
+    Returns:
+        torch model
+    """
 
     model = Sequential()
     # input_channels = 1 # bc greyscale
@@ -113,14 +145,12 @@ def build_net(specs, is_greyscale=True, previous_num_k=None):
             
             model.add_module(layer_name, 
                              ConvLayer(previous_num_k, num_k, k_size, stride, padding))
-            # model.add_module(layer_name, Conv2d(previous_num_k, num_k, k_size, stride=stride, padding=padding))
             previous_num_k = num_k
             
         elif layer_type == "pool":
             k_size, _, stride = layer_spec
             
             model.add_module(layer_name, MaxPool(kernel_size=k_size, stride=stride, padding=0))
-            # model.add_module(layer_name, MaxPool2d(k_size, stride=stride))
             
         elif layer_type == "flatten":
             model.add_module(layer_name, Flatten())
@@ -132,14 +162,11 @@ def build_net(specs, is_greyscale=True, previous_num_k=None):
             
         elif layer_type == "l_relu":
             model.add_module(layer_name, Leaky_ReLU())
-            
-        elif layer_type == "norm":
-            model.add_module(layer_name, LayerNorm(layer_spec))
         
         elif layer_type == "drop":
             model.add_module(layer_name, Dropout(layer_spec))
         else:
-            pass
+            print("WARNING: Layer type not recognized")
             
         layer_num += 1
         
@@ -147,7 +174,17 @@ def build_net(specs, is_greyscale=True, previous_num_k=None):
 
 
 def build_yolo_net(pt_specs, yolo_added_spec, pt_file=None):
-    
+    """Build the yolo model
+
+    Args:
+        pt_specs (list): Specification list that the pretraining data used
+        yolo_added_spec (list): Specification list of additional layers
+        pt_file (str, optional): .pt file if you want to import pretrained weights. 
+        Defaults to None.
+
+    Returns:
+        torch model
+    """
 
     model = build_net(pt_specs)
     if pt_file is not None:
@@ -167,29 +204,4 @@ def build_yolo_net(pt_specs, yolo_added_spec, pt_file=None):
         net.add_module(str(ctr), layer)
         ctr += 1
     
-    # print(net)
-    return net
-
-
-
-def resume_train(pt_specs, yolo_added_spec):
-    
-
-    model = build_net(pt_specs)
-    net = Sequential()
-    ctr = 0
-    for layer in model:
-
-        if isinstance(layer, Flatten):
-            break
-        net.add_module(str(ctr), layer)
-        ctr += 1
-        
-    
-    newnet = build_net(yolo_added_spec, previous_num_k=32)
-    for layer in newnet:
-        net.add_module(str(ctr), layer)
-        ctr += 1
-    
-    net.load_state_dict(torch.load("models/yolo.pt"))
     return net

@@ -1,3 +1,5 @@
+### This file contains the specs we will use
+
 pretrain_specs = [
     ("conv", (3, 32, 1)),
     ("l_relu", ()),

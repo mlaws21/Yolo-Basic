@@ -1,11 +1,11 @@
-# Here we are implementing the loss function describes on page 4
+# Here we are implementing the loss function describes on page 4 of the YOLO paper
 # Code is, at different parts, adapted from, inspired by, and borrowed from 
 # https://github.com/aladdinpersson/
 
 import torch
 import torch.nn
 
-# Tensor layout for each cell of 7x7:
+# Tensor layout for each cell of 3x3:
 # 
 #
 #        TRAIN
@@ -71,59 +71,71 @@ def intersection_over_union(predictions, targets):
 
     
 def yolo_loss(predictions, target, S=3, B=1, C=5):
+    """Loss function for YOLO as described in the YOLO paper and adapted for our model
+
+    Args:
+        predictions (torch.tensor): Tensor of predictions that the model produces
+        target (torch.tensor): Tensor of ground truth data
+        S (int, optional): Grid size. Defaults to 3.
+        B (int, optional): Number of bounding boxes. Defaults to 1.
+        C (int, optional): Number of catagories. Defaults to 5.
+
+    Returns:
+        single number that is the SSE of all the loss components
+    """
+
+    l_coord = 5
+    l_noobj = 0.5
+    sse = torch.nn.MSELoss(reduction="sum") # sum instead of averaging
     
-        l_coord = 5
-        l_noobj = 0.5
-        sse = torch.nn.MSELoss(reduction="sum") # sum instead of averaging
-        
-        # predictions should be of dimension (N, S, S, B*5+C)
-        # -1 is for the batch
-        predictions = predictions.reshape((-1, S, S, B * 5 + C))
+    # predictions should be of dimension (N, S, S, B*5+C)
+    # -1 is for the batch
+    predictions = predictions.reshape((-1, S, S, B * 5 + C))
 
 
-        # get best IOU for bounding box
-        resp_box = intersection_over_union(predictions[..., C + 1:], target[..., C + 1:])
+    # get best IOU for bounding box
+    resp_box = intersection_over_union(predictions[..., C + 1:], target[..., C + 1:])
 
-        # get indicator 𝟙obj_i
-        indicator = target[..., C].unsqueeze(3)
+    # get indicator 𝟙obj_i
+    indicator = target[..., C].unsqueeze(3)
 
-        ## box coordinate + box dimension loss ##
-        box_targets = indicator * target[..., C + 1:]
-        # select predicted coordinates
-        box_preds = indicator * (resp_box * predictions[..., C + 1:] + (1 - resp_box) * predictions[..., C + 1:])
-        # select predicted dimensions and take sqrt
-        box_preds[..., 2:4] = torch.sign(box_preds[..., 2:4]) * torch.sqrt(torch.abs(box_preds[..., 2:4] + 1e-6))
-        # take sqrt of target dimensions as well
-        box_targets[..., 2:4] = torch.sqrt(box_targets[..., 2:4])
-        # calculate loss with sse
-        box_loss = sse(torch.flatten(box_preds, end_dim=-2), torch.flatten(box_targets, end_dim=-2))
+    # box coordinate + box dimension loss
+    box_targets = indicator * target[..., C + 1:]
+    # select predicted coordinates
+    box_preds = indicator * (resp_box * predictions[..., C + 1:] + (1 - resp_box) * predictions[..., C + 1:])
+    # select predicted dimensions and take sqrt
+    box_preds[..., 2:4] = torch.sign(box_preds[..., 2:4]) * torch.sqrt(torch.abs(box_preds[..., 2:4] + 1e-6))
+    # take sqrt of target dimensions as well
+    box_targets[..., 2:4] = torch.sqrt(box_targets[..., 2:4])
+    # calculate loss with sse
+    box_loss = sse(torch.flatten(box_preds, end_dim=-2), torch.flatten(box_targets, end_dim=-2))
 
-        ## object loss ##
+    # object loss
 
-        resp_confidence = resp_box * predictions[..., C:C+1]
-        
-        object_loss = sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., C:C+1]))
+    resp_confidence = resp_box * predictions[..., C:C+1]
+    
+    object_loss = sse(torch.flatten(indicator * resp_confidence), torch.flatten(indicator * target[..., C:C+1]))
 
-        # no object loss
-        noobj_loss_b1 = sse(torch.flatten((1 - indicator) * predictions[..., C:C+1], start_dim=1),
-                              torch.flatten((1 - indicator) * target[..., C:C+1], start_dim=1))
+    # no object loss
+    noobj_loss_b1 = sse(torch.flatten((1 - indicator) * predictions[..., C:C+1], start_dim=1),
+                            torch.flatten((1 - indicator) * target[..., C:C+1], start_dim=1))
 
-        noobj_loss = noobj_loss_b1
+    noobj_loss = noobj_loss_b1
 
-        # class loss: SSE between 5 class predicted probabilities and one-hot target
-        class_loss = sse(torch.flatten(indicator * predictions[..., :C], end_dim=-2), torch.flatten(indicator * target[..., :C], end_dim=-2))
+    # class loss: SSE between 5 class predicted probabilities and one-hot target
+    class_loss = sse(torch.flatten(indicator * predictions[..., :C], end_dim=-2), torch.flatten(indicator * target[..., :C], end_dim=-2))
 
-        overall_loss = l_coord * box_loss +  object_loss + l_noobj * noobj_loss + class_loss
-        return overall_loss
+    overall_loss = l_coord * box_loss +  object_loss + l_noobj * noobj_loss + class_loss
+    return overall_loss
     
 
 def nlog_softmax_loss(X, y):
     """
-    A loss function based on softmax, described in colonels2.ipynb. 
-    X is the (batch) output of the neural network, while y is a response 
-    vector.
+    A loss function based on softmaxX is the (batch) output of the neural network, 
+    while y is a response vector.
     
-    See the unit tests in test.py for expected functionality.
+    Note: This is the loss used for pretraining
+
     
     """    
     smax = torch.softmax(X, dim=1)

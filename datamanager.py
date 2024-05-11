@@ -9,7 +9,7 @@ import os
 import time
 import sys
 
-def retrieve_image(filename, W=112):
+def retrieve_image(filename, is_greyscale=True, W=112):
     """
     Loads an image, resizes it to WxW pixels, and then converts it into a
     Torch tensor of shape (3, W, W). The "3" dimension corresponds to 
@@ -20,7 +20,8 @@ def retrieve_image(filename, W=112):
         img = io.read_image(filename, io.ImageReadMode.RGB)
         resize = transforms.Resize((W, W))
         grayscale = transforms.Grayscale(num_output_channels=1)
-        img = grayscale(img)
+        if is_greyscale:
+            img = grayscale(img)
         img = (resize(img).float() - 127) / 256
         
         return img
@@ -50,6 +51,8 @@ class DataPartition(Dataset):
         for datum in tqdm(data):
             if datum['partition'] == partition:
                 img_filename = os.path.join(data_dir, datum['filename'])
+                # we add 'box' as a field in the instance to fetch the bounding box
+                # data from the json file.
                 instance = {'image': retrieve_image(img_filename, resize_width), 
                             'category': datum['label'], 
                             'filename': datum['filename'],
@@ -88,7 +91,19 @@ class DataPartition(Dataset):
         return self._categories
 
 
-def convert_to_output(labs_list, boxes_list, S=3, C=5):
+def convert_to_output(labs_list: list[str], boxes_list, S=3, C=5):
+    """ Takes in the ground truth data from the json file and converts it
+    to an output tensor. 
+
+    Args:
+        labs_list (list[str]): list of labels 
+        boxes_list: list of bounding boxes
+        S (int, optional): Grid size. Defaults to 3.
+        C (int, optional): Number of catagories. Defaults to 5.
+
+    Returns:
+        torch.tensor: ground truth value tensor to feed to the loss function
+    """
     assert len(labs_list) == len(boxes_list)
     batch_out = []
     for i in range(len(labs_list)):
@@ -172,16 +187,15 @@ class DataManager:
         
         The feature tensor returned is just batch[self.feature_key].
         
-        To build the response tensor, one starts with batch[self.response_key],
-        where each element is a "response value". Each of these response
-        values is then mapped to the index of that response in the sorted set of
-        all possible response values. The resulting tensor should be
-        a LongTensor.
+        To build the response tensor we convert the label and bounding box info
+        from the json entry into a tensor in the correct shape using the
+        convert_to_output function
+        
+        Note: we call this when training yolo
 
         The return value of this function is:
             feature_tensor, response_tensor
         
-        See the unit tests in test.py for example usages.
         
         """
         def category_index(category):
@@ -208,6 +222,9 @@ class DataManager:
         values is then mapped to the index of that response in the sorted set of
         all possible response values. The resulting tensor should be
         a LongTensor.
+        
+        Note: we call this when pretraining
+        
 
         The return value of this function is:
             feature_tensor, response_tensor
@@ -230,7 +247,6 @@ class DataManager:
         partition ("train" or "test") by computing the percentage of
         correct responses.
         
-        See the unit test ```test_evaluate``` in test.py for expected usage.
         
         """
         def loader(partition):
@@ -260,6 +276,17 @@ class DataManager:
     
    
     def yolo_evaluate(self, classifier, partition):
+        """Given a yolo classifer evaluates the output because of time constraints
+        does not use mAP; however this is where it would be implemented.
+        
+        Instead we only check if the prediction for each grid square is made
+        correctly, not if the boxes were actually correct.
+        
+        Note: we didn't use this evaluation for anything substantive merely
+        just to get an idea on what is happening.
+
+        """
+        
         
         def loader(partition):
             if partition == 'train':
@@ -288,6 +315,9 @@ class DataManager:
 
 
 class TrainingMonitor:
+    """This is just a class that displays some helpful information about the training
+    process in a nice way. This code was taken from deep learning homeworks 
+    """
     
     def __init__(self, verbose=False):
         self.verbose = verbose

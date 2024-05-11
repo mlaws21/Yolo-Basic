@@ -1,12 +1,13 @@
 import torch
-from torch.nn import Unfold, Parameter, Module, init, Sequential
+from torch.nn import Unfold
 DEVICE="cpu"
+
+### THIS CODE IS TAKEN FROM MATT'S KERNELS LAB
 
 def create_kernel_row_matrix(kernels):
     """
     Creates a kernel-row matrix (as described in the notes on
-    "Computing Convolutions"). See the unit tests for example input
-    and output.
+    "Computing Convolutions").
     
     """
     kernels = kernels.to(DEVICE)
@@ -19,8 +20,7 @@ def create_kernel_row_matrix(kernels):
 def create_window_column_matrix(images, window_width, stride):
     """
     Creates a window-column matrix (as described in the notes on
-    "Computing Convolutions"). See the unit tests for example input
-    and output.
+    "Computing Convolutions").
     
     """
     images = images.to(DEVICE)
@@ -45,7 +45,6 @@ def pad(images, padding):
     num_images, num_channels, height, width = images.size()
     top = torch.zeros(num_images, num_channels, padding, width, device=DEVICE)
     side = torch.zeros(num_images, num_channels, height + 2*padding, padding, device=DEVICE)
-    # print(images, top)
     bpad = torch.cat([images, top], dim=-2)
     tpad = torch.cat([top, bpad], dim=-2)
     lpad = torch.cat([side, tpad], dim=-1)
@@ -63,7 +62,6 @@ def convolve(kernels, images, stride, padding):
     
     """
     num_kernels, _, height, width = kernels.size()
-    # num_images, num_channels, img_height, img_width = images.size()
     krm = create_kernel_row_matrix(kernels)
     padded_images = pad(images, padding)
     num_images, _, img_height, img_width = padded_images.size()

@@ -8,12 +8,22 @@ from specs import pretrain_specs, additional_yolo_specs
 import sys
 
 
-def pretrain_helper(data_config, inter_name, n_epochs=10):    
+def pretrain_helper(data_config, inter_name=None, n_epochs=10, image_width=112, batch_size=32):    
+    """Runs the pretraining regime for our image recognition task
+
+    Args:
+        data_config: data.json file to extract the data from 
+        inter_name: (optional): name to save intermediate weights as while training,
+        if none it doesn't save. Defaults to None.
+        n_epochs (int, optional): Number of epochs to run for. Defaults to 10.
+        image_width (int, optional): width and height of input image. Defaults to 112.
+        batch_size (int, optional): size of minibatch. Defaults to 32.
+        
+
+    Returns:
+        pretrained model
     """
-    Runs a training regime for a CNN.
     
-    """
-    image_width = 112
     
     train_set = DataPartition(data_config, './', 'train', resize_width=image_width)
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
@@ -24,16 +34,24 @@ def pretrain_helper(data_config, inter_name, n_epochs=10):
     net = build_net(pretrain_specs)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = minibatch_training(net, manager, 
-                                           batch_size=32, n_epochs=n_epochs, 
+                                           batch_size=batch_size, n_epochs=n_epochs, 
                                            optimizer=optimizer, loss=loss, inter_name=inter_name)
     return best_net
  
-def run_yolo(data_config, inter_name, pt_file=None, n_epochs=10):    
+def run_yolo(data_config, inter_name=None, pt_file=None, n_epochs=10, image_width=112, batch_size=32):    
+    """Runs the yolo training regime
+
+    Args:
+        data_config: data.json file to extract the data from 
+        inter_name: (optional): name to save intermediate weights as while training,
+        if none it doesn't save. Defaults to None.
+        n_epochs (int, optional): Number of epochs to run for. Defaults to 10.
+        image_width (int, optional): width and height of input image. Defaults to 112.
+        batch_size (int, optional): size of minibatch. Defaults to 32.
+
+    Returns:
+        yolo model
     """
-    Runs a training regime for a CNN.
-    
-    """
-    image_width = 112
     
     train_set = DataPartition(data_config, './', 'train', resize_width=image_width)
     test_set = DataPartition(data_config, './', 'test', resize_width=image_width)
@@ -44,16 +62,18 @@ def run_yolo(data_config, inter_name, pt_file=None, n_epochs=10):
 
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)  
     best_net, _ = yolo_training(net, manager, 
-                                           batch_size=32, n_epochs=n_epochs, 
+                                           batch_size=batch_size, n_epochs=n_epochs, 
                                            optimizer=optimizer, loss=loss, inter_name=inter_name)
 
     return best_net
 
 def pretrain(json, save_name, inter_name):
+    """Simple call to run and save the pretraining"""
     best_net = pretrain_helper(json, inter_name=inter_name, n_epochs=20)
     torch.save(best_net.state_dict(), save_name)
     
 def train(json, save_name, inter_name, pt_file):
+    """Simple call to run and save the training"""
     best_net = run_yolo(json, inter_name=inter_name, pt_file=pt_file, n_epochs=100)
     torch.save(best_net.state_dict(), save_name)
 
