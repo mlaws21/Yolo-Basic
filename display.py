@@ -41,7 +41,6 @@ def display_image(image_path, bb, rc, colors, text, size=400, s=3, jupyter=True)
     for i in range(len(bb)):
         add_box(draw, font, bb[i], rc[i], colors[i], text[i], size, s)
     
-    # image.save(".cheat.png")
     if jupyter:
         return image
     else:
